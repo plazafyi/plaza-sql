@@ -1,0 +1,7 @@
+[project]
+name = "plaza-sql"
+version = "0.0.0"
+requires-python = ">=3.9.18"
+dependencies = [
+    "plaza @ https://github.com/stainless-sdks/plaza-python.git",
+]

@@ -1,0 +1,47 @@
+{
+  "name": "plaza",
+  "abstract": "The official PostgreSQL extension for the Plaza API.",
+  "tags": [
+    "api",
+    "http",
+    "rest",
+    "sdk"
+  ],
+  "version": "0.0.1",
+  "release_status": "testing",
+  "maintainer": "Plaza <>",
+  "generated_by": "Stainless (https://stainless.com)",
+  "license": "apache_2_0",
+  "resources": {
+    "homepage": "https://www.github.com/stainless-sdks/plaza-sql",
+    "bugtracker": {
+      "web": "https://www.github.com/stainless-sdks/plaza-sql/issues",
+      "mailto": ""
+    },
+    "repository": {
+      "url": "git://github.com/stainless-sdks/plaza-sql.git",
+      "web": "https://www.github.com/stainless-sdks/plaza-sql",
+      "type": "git"
+    }
+  },
+  "provides": {
+    "plaza": {
+      "abstract": "The official PostgreSQL extension for the Plaza API.",
+      "file": "sql/build/plaza--0.0.1.sql",
+      "docfile": "README.md",
+      "version": "0.0.1"
+    }
+  },
+  "prereqs": {
+    "runtime": {
+      "requires": {
+        "PostgreSQL": "14.0.0",
+        "plpython3u": "0"
+      }
+    }
+  },
+  "meta-spec": {
+    "version": "1.0.0",
+    "url": "https://pgxn.org/meta/spec.txt"
+  }
+}
