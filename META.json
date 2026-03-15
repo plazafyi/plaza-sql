@@ -13,14 +13,14 @@
   "generated_by": "Stainless (https://stainless.com)",
   "license": "apache_2_0",
   "resources": {
-    "homepage": "https://www.github.com/stainless-sdks/plaza-sql",
+    "homepage": "https://www.github.com/plazafyi/plaza-sql",
     "bugtracker": {
-      "web": "https://www.github.com/stainless-sdks/plaza-sql/issues",
+      "web": "https://www.github.com/plazafyi/plaza-sql/issues",
       "mailto": ""
     },
     "repository": {
-      "url": "git://github.com/stainless-sdks/plaza-sql.git",
-      "web": "https://www.github.com/stainless-sdks/plaza-sql",
+      "url": "git://github.com/plazafyi/plaza-sql.git",
+      "web": "https://www.github.com/plazafyi/plaza-sql",
       "type": "git"
     }
   },
