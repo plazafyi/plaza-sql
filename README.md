@@ -37,8 +37,8 @@ CREATE EXTENSION plaza;
 And install the Python SDK dependency:
 
 ```sh
-# install from the production repo
-pip install git+ssh://git@github.com/plazafyi/plaza-python.git
+# install from PyPI
+pip install plaza
 ```
 
 See [`./scripts/test`](./scripts/test) how to use a [Python virtual environment](https://docs.python.org/3/library/sys_path_init.html#sys-path-init-virtual-environments) if you prefer that instead.
