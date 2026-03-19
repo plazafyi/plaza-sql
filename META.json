@@ -9,14 +9,14 @@
   ],
   "version": "0.0.1",
   "release_status": "testing",
-  "maintainer": "Plaza <>",
+  "maintainer": "Plaza <support@plaza.fyi>",
   "generated_by": "Stainless (https://stainless.com)",
   "license": "apache_2_0",
   "resources": {
-    "homepage": "https://www.github.com/plazafyi/plaza-sql",
+    "homepage": "https://docs.plaza.fyi",
     "bugtracker": {
       "web": "https://www.github.com/plazafyi/plaza-sql/issues",
-      "mailto": ""
+      "mailto": "support@plaza.fyi"
     },
     "repository": {
       "url": "git://github.com/plazafyi/plaza-sql.git",

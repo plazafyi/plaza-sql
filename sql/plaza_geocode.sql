@@ -1,0 +1,272 @@
+ALTER TYPE plaza_geocode.autocomplete_result
+  ADD ATTRIBUTE features plaza_geocode.geocoding_feature[],
+  ADD ATTRIBUTE type TEXT;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_autocomplete_result(
+  features plaza_geocode.geocoding_feature[], type TEXT
+)
+RETURNS plaza_geocode.autocomplete_result
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(features, type)::plaza_geocode.autocomplete_result;
+$$;
+
+ALTER TYPE plaza_geocode.geocode_result
+  ADD ATTRIBUTE features plaza_geocode.geocoding_feature[],
+  ADD ATTRIBUTE type TEXT;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_geocode_result(
+  features plaza_geocode.geocoding_feature[], type TEXT
+)
+RETURNS plaza_geocode.geocode_result
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(features, type)::plaza_geocode.geocode_result;
+$$;
+
+ALTER TYPE plaza_geocode.geocoding_feature
+  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
+  ADD ATTRIBUTE properties plaza_geocode.geocoding_feature_property,
+  ADD ATTRIBUTE type TEXT;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_geocoding_feature(
+  geometry plaza.geo_json_geometry,
+  properties plaza_geocode.geocoding_feature_property,
+  type TEXT
+)
+RETURNS plaza_geocode.geocoding_feature
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(geometry, properties, type)::plaza_geocode.geocoding_feature;
+$$;
+
+ALTER TYPE plaza_geocode.geocoding_feature_property
+  ADD ATTRIBUTE country_code TEXT,
+  ADD ATTRIBUTE display_name TEXT,
+  ADD ATTRIBUTE distance_m DOUBLE PRECISION,
+  ADD ATTRIBUTE osm_id BIGINT,
+  ADD ATTRIBUTE osm_type TEXT,
+  ADD ATTRIBUTE score DOUBLE PRECISION,
+  ADD ATTRIBUTE source TEXT;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_geocoding_feature_property(
+  country_code TEXT DEFAULT NULL,
+  display_name TEXT DEFAULT NULL,
+  distance_m DOUBLE PRECISION DEFAULT NULL,
+  osm_id BIGINT DEFAULT NULL,
+  osm_type TEXT DEFAULT NULL,
+  score DOUBLE PRECISION DEFAULT NULL,
+  source TEXT DEFAULT NULL
+)
+RETURNS plaza_geocode.geocoding_feature_property
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(
+    country_code, display_name, distance_m, osm_id, osm_type, score, source
+  )::plaza_geocode.geocoding_feature_property;
+$$;
+
+ALTER TYPE plaza_geocode.reverse_geocode_result
+  ADD ATTRIBUTE features plaza_geocode.geocoding_feature[],
+  ADD ATTRIBUTE type TEXT;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_reverse_geocode_result(
+  features plaza_geocode.geocoding_feature[], type TEXT
+)
+RETURNS plaza_geocode.reverse_geocode_result
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(features, type)::plaza_geocode.reverse_geocode_result;
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode._autocomplete(
+  q TEXT,
+  country_code TEXT DEFAULT NULL,
+  lang TEXT DEFAULT NULL,
+  lat DOUBLE PRECISION DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  lng DOUBLE PRECISION DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpython3u
+STABLE
+AS $$
+  from plaza._types import not_given
+
+  response = GD["__plaza_context__"].client.geocode.with_raw_response.autocomplete(
+      q=q,
+      country_code=not_given if country_code is None else country_code,
+      lang=not_given if lang is None else lang,
+      lat=not_given if lat is None else lat,
+      layer=not_given if layer is None else layer,
+      limit=not_given if limit is None else limit,
+      lng=not_given if lng is None else lng,
+  )
+
+  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
+  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
+  # caller later.
+  return response.text()
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.autocomplete(
+  q TEXT,
+  country_code TEXT DEFAULT NULL,
+  lang TEXT DEFAULT NULL,
+  lat DOUBLE PRECISION DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  lng DOUBLE PRECISION DEFAULT NULL
+)
+RETURNS plaza_geocode.autocomplete_result
+LANGUAGE plpgsql
+STABLE
+AS $$
+  BEGIN
+    PERFORM plaza_internal.ensure_context();
+    RETURN jsonb_populate_record(
+      NULL::plaza_geocode.autocomplete_result,
+      plaza_geocode._autocomplete(
+        q, country_code, lang, lat, layer, "limit", lng
+      )
+    );
+  END;
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode._batch(addresses TEXT[])
+RETURNS JSONB
+LANGUAGE plpython3u
+AS $$
+  response = GD["__plaza_context__"].client.geocode.with_raw_response.batch(
+      addresses=addresses,
+  )
+
+  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
+  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
+  # caller later.
+  return response.text()
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.batch(addresses TEXT[])
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+  BEGIN
+    PERFORM plaza_internal.ensure_context();
+    RETURN plaza_geocode._batch(addresses);
+  END;
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode._forward(
+  q TEXT,
+  bbox TEXT DEFAULT NULL,
+  country_code TEXT DEFAULT NULL,
+  lang TEXT DEFAULT NULL,
+  lat DOUBLE PRECISION DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  lng DOUBLE PRECISION DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpython3u
+STABLE
+AS $$
+  from plaza._types import not_given
+
+  response = GD["__plaza_context__"].client.geocode.with_raw_response.forward(
+      q=q,
+      bbox=not_given if bbox is None else bbox,
+      country_code=not_given if country_code is None else country_code,
+      lang=not_given if lang is None else lang,
+      lat=not_given if lat is None else lat,
+      layer=not_given if layer is None else layer,
+      limit=not_given if limit is None else limit,
+      lng=not_given if lng is None else lng,
+  )
+
+  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
+  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
+  # caller later.
+  return response.text()
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.forward(
+  q TEXT,
+  bbox TEXT DEFAULT NULL,
+  country_code TEXT DEFAULT NULL,
+  lang TEXT DEFAULT NULL,
+  lat DOUBLE PRECISION DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  lng DOUBLE PRECISION DEFAULT NULL
+)
+RETURNS plaza_geocode.geocode_result
+LANGUAGE plpgsql
+STABLE
+AS $$
+  BEGIN
+    PERFORM plaza_internal.ensure_context();
+    RETURN jsonb_populate_record(
+      NULL::plaza_geocode.geocode_result,
+      plaza_geocode._forward(
+        q, bbox, country_code, lang, lat, layer, "limit", lng
+      )
+    );
+  END;
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode._reverse(
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  lang TEXT DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  radius BIGINT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpython3u
+STABLE
+AS $$
+  from plaza._types import not_given
+
+  response = GD["__plaza_context__"].client.geocode.with_raw_response.reverse(
+      lat=lat,
+      lng=lng,
+      lang=not_given if lang is None else lang,
+      layer=not_given if layer is None else layer,
+      limit=not_given if limit is None else limit,
+      radius=not_given if radius is None else radius,
+  )
+
+  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
+  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
+  # caller later.
+  return response.text()
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.reverse(
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  lang TEXT DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  radius BIGINT DEFAULT NULL
+)
+RETURNS plaza_geocode.reverse_geocode_result
+LANGUAGE plpgsql
+STABLE
+AS $$
+  BEGIN
+    PERFORM plaza_internal.ensure_context();
+    RETURN jsonb_populate_record(
+      NULL::plaza_geocode.reverse_geocode_result,
+      plaza_geocode._reverse(lat, lng, lang, layer, "limit", radius)
+    );
+  END;
+$$;
