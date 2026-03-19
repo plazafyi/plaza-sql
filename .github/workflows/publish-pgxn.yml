@@ -1,0 +1,25 @@
+# This workflow is triggered when a GitHub release is created.
+# It can also be run manually to re-publish to PGXN in case it failed for some reason.
+# You can run this workflow by navigating to https://www.github.com/plazafyi/plaza-sql/actions/workflows/publish-pgxn.yml
+name: Publish to PGXN
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Bundle the release
+         id: bundle
+         run: pgxn-bundle
+
+      - name: Release on PGXN
+        env:
+          PGXN_USERNAME: ${{ secrets.PLAZA_PGXN_USERNAME || secrets.PGXN_USERNAME }}
+          PGXN_PASSWORD: ${{ secrets.PLAZA_PGXN_PASSWORD || secrets.PGXN_PASSWORD }}
+        run: pgxn-release

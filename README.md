@@ -8,11 +8,97 @@
 >
 > **We'd love your feedback!** Please share any suggestions, bug reports, feature requests, or general thoughts by [filing an issue](https://www.github.com/plazafyi/plaza-sql/issues/new).
 
-The Plaza API PostgreSQL Extension provides convenient access to the Plaza REST API from PostgreSQL.
+The Plaza API PostgreSQL Extension provides convenient access to the [Plaza REST API](https://docs.plaza.fyi) from PostgreSQL.
 
 It is generated with [Stainless](https://www.stainless.com/).
 
+The REST API documentation can be found on [docs.plaza.fyi](https://docs.plaza.fyi).
+
 ## Installation
+
+Install the extension from [PGXN](https://pgxn.org/dist/plaza):
+
+```sh
+pgxn install plaza
+```
+
+Load it into your database:
+
+```sh
+pgxn load -d yourb plaza
+```
+
+And install the Python SDK dependency:
+
+```sh
+# install from PyPI
+pip install plaza
+```
+
+See [PGXN Client's documentation](https://pgxn.github.io/pgxnclient) for more information on installing from PGXN, and [`./scripts/test`](./scripts/test) how to use a [Python virtual environment](https://docs.python.org/3/library/sys_path_init.html#sys-path-init-virtual-environments) if you prefer that instead.
+
+Use [the troubleshooting section](#troubleshooting) if you encounter issues during or after installation.
+
+## Requirements
+
+This extension requires:
+
+- PostgreSQL 14 or higher
+- [PL/Python](https://www.postgresql.org/docs/current/plpython.html)
+- Python 3.9 or higher
+- The plaza Python package
+
+## Usage
+
+```sql
+SELECT *
+FROM plaza_elements.nearby(lat := 48.8584, lng := 0, radius := 500);
+```
+
+## Client configuration
+
+Configure the client by setting configuration parameters at the database level:
+
+```sql
+ALTER DATABASE my_database SET plaza.api_key = 'My API Key';
+```
+
+> [!NOTE]
+>
+> `ALTER DATABASE` persistently alters the database, but doesn't take effect until the next session. To
+> ephemerally modify the current session, use `SET plaza.api_key TO 'My API Key';`.
+
+See this table for the available configuration parameters:
+
+| Parameter           | Required | Default value         |
+| ------------------- | -------- | --------------------- |
+| `plaza.api_key`     | true     | -                     |
+| `plaza.base_url`    | false    | `'https://plaza.fyi'` |
+| `plaza.environment` | false    | `'production'`        |
+
+`plaza.environment` supports the following values:
+
+- `production`
+- `local`
+
+## Requests and responses
+
+To send a request to the Plaza API, call the relevant SQL function with values corresponding to the parameter types and `SELECT` the columns you need from the returned rows.
+
+To construct [composite type](https://www.postgresql.org/docs/current/rowtypes.html) parameters, use the parameter type's provided `make_*` function. For example, `plaza.geo_json_geometry` may be constructed like so:
+
+```sql
+plaza.make_geo_json_geometry(
+  coordinates := ARRAY[
+    $$
+    0
+    $$::JSONB
+  ],
+  type := 'Point'
+)
+```
+
+## Manual installation
 
 Clone the repository:
 
@@ -44,58 +130,6 @@ pip install plaza
 See [`./scripts/test`](./scripts/test) how to use a [Python virtual environment](https://docs.python.org/3/library/sys_path_init.html#sys-path-init-virtual-environments) if you prefer that instead.
 
 Use [the troubleshooting section](#troubleshooting) if you encounter issues during or after installation.
-
-## Requirements
-
-This extension requires:
-
-- PostgreSQL 14 or higher
-- [PL/Python](https://www.postgresql.org/docs/current/plpython.html)
-- Python 3.9 or higher
-- The plaza Python package
-
-## Usage
-
-```sql
-SELECT *
-FROM plaza_v1_datasets.list();
-```
-
-## Client configuration
-
-Configure the client by setting configuration parameters at the database level:
-
-```sql
-ALTER DATABASE my_database SET plaza.api_key = 'My API Key';
-```
-
-> [!NOTE]
->
-> `ALTER DATABASE` persistently alters the database, but doesn't take effect until the next session. To
-> ephemerally modify the current session, use `SET plaza.api_key TO 'My API Key';`.
-
-See this table for the available configuration parameters:
-
-| Parameter           | Required | Default value         |
-| ------------------- | -------- | --------------------- |
-| `plaza.api_key`     | true     | -                     |
-| `plaza.base_url`    | false    | `'https://plaza.fyi'` |
-| `plaza.environment` | false    | `'production'`        |
-
-`plaza.environment` supports the following values:
-
-- `production`
-- `environment_1`
-
-## Requests and responses
-
-To send a request to the Plaza API, call the relevant SQL function with values corresponding to the parameter types and `SELECT` the columns you need from the returned rows.
-
-To construct [composite type](https://www.postgresql.org/docs/current/rowtypes.html) parameters, use the parameter type's provided `make_*` function. For example, `plaza_v1.calculate_route_params_destination` may be constructed like so:
-
-```sql
-plaza_v1.make_calculate_route_params_destination(lat := 0, lng := 0)
-```
 
 ## Troubleshooting
 

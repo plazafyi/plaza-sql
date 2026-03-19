@@ -7,7 +7,7 @@ PG_CONFIG = pg_config
 
 TESTS        = $(wildcard test/sql/*.sql)
 REGRESS      = $(patsubst test/sql/%.sql,%,$(TESTS))
-REGRESS_OPTS = --inputdir=test --outputdir=regress
+REGRESS_OPTS = --inputdir=test --outputdir=regress --schedule=test/parallel_schedule
 
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
