@@ -103,7 +103,7 @@ wheels = [
 
 [[package]]
 name = "plaza"
-version = "0.0.3"
+version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
