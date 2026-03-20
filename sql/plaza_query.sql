@@ -108,12 +108,17 @@ AS $$
   END;
 $$;
 
-CREATE OR REPLACE FUNCTION plaza_query._overpass(data TEXT)
+CREATE OR REPLACE FUNCTION plaza_query._overpass(
+  data TEXT, format TEXT DEFAULT NULL
+)
 RETURNS JSONB
 LANGUAGE plpython3u
 AS $$
+  from plaza._types import not_given
+
   response = GD["__plaza_context__"].client.query.with_raw_response.overpass(
       data=data,
+      format=not_given if format is None else format,
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -122,14 +127,16 @@ AS $$
   return response.text()
 $$;
 
-CREATE OR REPLACE FUNCTION plaza_query.overpass(data TEXT)
+CREATE OR REPLACE FUNCTION plaza_query.overpass(
+  data TEXT, format TEXT DEFAULT NULL
+)
 RETURNS plaza.feature_collection
 LANGUAGE plpgsql
 AS $$
   BEGIN
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
-      NULL::plaza.feature_collection, plaza_query._overpass(data)
+      NULL::plaza.feature_collection, plaza_query._overpass(data, format)
     );
   END;
 $$;

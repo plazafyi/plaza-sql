@@ -196,6 +196,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION plaza_optimize._create(
   waypoints plaza_optimize.create_params_waypoint[],
+  format TEXT DEFAULT NULL,
   mode TEXT DEFAULT NULL,
   roundtrip BOOLEAN DEFAULT NULL
 )
@@ -206,6 +207,7 @@ AS $$
 
   response = GD["__plaza_context__"].client.optimize.with_raw_response.create(
       waypoints=GD["__plaza_context__"].strip_none(waypoints),
+      format=not_given if format is None else format,
       mode=not_given if mode is None else mode,
       roundtrip=not_given if roundtrip is None else roundtrip,
   )
@@ -218,6 +220,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION plaza_optimize.create(
   waypoints plaza_optimize.create_params_waypoint[],
+  format TEXT DEFAULT NULL,
   mode TEXT DEFAULT NULL,
   roundtrip BOOLEAN DEFAULT NULL
 )
@@ -228,7 +231,7 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_optimize.optimize_result,
-      plaza_optimize._create(waypoints, mode, roundtrip)
+      plaza_optimize._create(waypoints, format, mode, roundtrip)
     );
   END;
 $$;

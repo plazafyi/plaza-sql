@@ -143,13 +143,17 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation._batch(
-  coordinates plaza_elevation.batch_params_coordinate[]
+  coordinates plaza_elevation.batch_params_coordinate[],
+  format TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
 AS $$
+  from plaza._types import not_given
+
   response = GD["__plaza_context__"].client.elevation.with_raw_response.batch(
       coordinates=GD["__plaza_context__"].strip_none(coordinates),
+      format=not_given if format is None else format,
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -159,7 +163,8 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation.batch(
-  coordinates plaza_elevation.batch_params_coordinate[]
+  coordinates plaza_elevation.batch_params_coordinate[],
+  format TEXT DEFAULT NULL
 )
 RETURNS plaza_elevation.elevation_batch_result
 LANGUAGE plpgsql
@@ -168,12 +173,13 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_elevation.elevation_batch_result,
-      plaza_elevation._batch(coordinates)
+      plaza_elevation._batch(coordinates, format)
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation._lookup(
+  format TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   lng DOUBLE PRECISION DEFAULT NULL,
   locations TEXT DEFAULT NULL,
@@ -188,6 +194,7 @@ AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.elevation.with_raw_response.lookup(
+      format=not_given if format is None else format,
       lat=not_given if lat is None else lat,
       lng=not_given if lng is None else lng,
       locations=not_given if locations is None else locations,
@@ -203,6 +210,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation.lookup(
+  format TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   lng DOUBLE PRECISION DEFAULT NULL,
   locations TEXT DEFAULT NULL,
@@ -219,13 +227,20 @@ AS $$
     RETURN jsonb_populate_record(
       NULL::plaza_elevation.elevation_lookup_result,
       plaza_elevation._lookup(
-        lat, lng, locations, output_fields, output_include, output_precision
+        format,
+        lat,
+        lng,
+        locations,
+        output_fields,
+        output_include,
+        output_precision
       )
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation._lookup_post(
+  format TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   lng DOUBLE PRECISION DEFAULT NULL,
   locations TEXT DEFAULT NULL,
@@ -239,6 +254,7 @@ AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.elevation.with_raw_response.lookup_post(
+      format=not_given if format is None else format,
       lat=not_given if lat is None else lat,
       lng=not_given if lng is None else lng,
       locations=not_given if locations is None else locations,
@@ -254,6 +270,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation.lookup_post(
+  format TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   lng DOUBLE PRECISION DEFAULT NULL,
   locations TEXT DEFAULT NULL,
@@ -269,7 +286,13 @@ AS $$
     RETURN jsonb_populate_record(
       NULL::plaza_elevation.elevation_lookup_result,
       plaza_elevation._lookup_post(
-        lat, lng, locations, output_fields, output_include, output_precision
+        format,
+        lat,
+        lng,
+        locations,
+        output_fields,
+        output_include,
+        output_precision
       )
     );
   END;

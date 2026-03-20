@@ -176,6 +176,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_datasets._features(
   id TEXT,
   cursor TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
   output_buffer DOUBLE PRECISION DEFAULT NULL,
   output_centroid BOOLEAN DEFAULT NULL,
@@ -195,6 +196,7 @@ AS $$
   response = GD["__plaza_context__"].client.datasets.with_raw_response.features(
       id=id,
       cursor=not_given if cursor is None else cursor,
+      format=not_given if format is None else format,
       limit=not_given if limit is None else limit,
       output_buffer=not_given if output_buffer is None else output_buffer,
       output_centroid=not_given if output_centroid is None else output_centroid,
@@ -215,6 +217,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_datasets.features(
   id TEXT,
   cursor TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
   output_buffer DOUBLE PRECISION DEFAULT NULL,
   output_centroid BOOLEAN DEFAULT NULL,
@@ -236,6 +239,7 @@ AS $$
       plaza_datasets._features(
         id,
         cursor,
+        format,
         "limit",
         output_buffer,
         output_centroid,
