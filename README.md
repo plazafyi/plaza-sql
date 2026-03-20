@@ -6,42 +6,36 @@
 >
 > This extension has not yet been exhaustively tested in production environments and may be missing some features you'd expect in a stable release. As we continue development, there may be breaking changes that require updates to your code.
 >
-> **We'd love your feedback!** Please share any suggestions, bug reports, feature requests, or general thoughts by [filing an issue](https://www.github.com/stainless-sdks/plaza-sql/issues/new).
+> **We'd love your feedback!** Please share any suggestions, bug reports, feature requests, or general thoughts by [filing an issue](https://www.github.com/plazafyi/plaza-sql/issues/new).
 
-The Plaza API PostgreSQL Extension provides convenient access to the Plaza REST API from PostgreSQL.
+The Plaza API PostgreSQL Extension provides convenient access to the [Plaza REST API](https://docs.plaza.fyi) from PostgreSQL.
 
 It is generated with [Stainless](https://www.stainless.com/).
 
+The REST API documentation can be found on [docs.plaza.fyi](https://docs.plaza.fyi).
+
 ## Installation
 
-Clone the repository:
+Install the extension from [PGXN](https://pgxn.org/dist/plaza):
 
 ```sh
-git clone git@github.com:stainless-sdks/plaza-sql.git
-cd plaza-sql
+pgxn install plaza
 ```
 
-Install the extension:
+Load it into your database:
 
 ```sh
-make install
-```
-
-Load it into the relevant database:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS plpython3u; -- Dependency
-CREATE EXTENSION plaza;
+pgxn load -d yourb plaza
 ```
 
 And install the Python SDK dependency:
 
 ```sh
-# install from the production repo
-pip install git+ssh://git@github.com/plazafyi/plaza-python.git
+# install from PyPI
+pip install plaza
 ```
 
-See [`./scripts/test`](./scripts/test) how to use a [Python virtual environment](https://docs.python.org/3/library/sys_path_init.html#sys-path-init-virtual-environments) if you prefer that instead.
+See [PGXN Client's documentation](https://pgxn.github.io/pgxnclient) for more information on installing from PGXN, and [`./scripts/test`](./scripts/test) how to use a [Python virtual environment](https://docs.python.org/3/library/sys_path_init.html#sys-path-init-virtual-environments) if you prefer that instead.
 
 Use [the troubleshooting section](#troubleshooting) if you encounter issues during or after installation.
 
@@ -58,7 +52,7 @@ This extension requires:
 
 ```sql
 SELECT *
-FROM plaza_v1_datasets.list();
+FROM plaza_elements.query(near := '48.8584,2.2945', radius := 500);
 ```
 
 ## Client configuration
@@ -85,17 +79,50 @@ See this table for the available configuration parameters:
 `plaza.environment` supports the following values:
 
 - `production`
-- `environment_1`
+- `local`
 
 ## Requests and responses
 
 To send a request to the Plaza API, call the relevant SQL function with values corresponding to the parameter types and `SELECT` the columns you need from the returned rows.
 
-To construct [composite type](https://www.postgresql.org/docs/current/rowtypes.html) parameters, use the parameter type's provided `make_*` function. For example, `plaza_v1.calculate_route_params_destination` may be constructed like so:
+To construct [composite type](https://www.postgresql.org/docs/current/rowtypes.html) parameters, use the parameter type's provided `make_*` function. For example, `plaza_routing.route_params_destination` may be constructed like so:
 
 ```sql
-plaza_v1.make_calculate_route_params_destination(lat := 0, lng := 0)
+plaza_routing.make_route_params_destination(lat := 48.8584, lng := 2.2945)
 ```
+
+## Manual installation
+
+Clone the repository:
+
+```sh
+git clone git@github.com:plazafyi/plaza-sql.git
+cd plaza-sql
+```
+
+Install the extension:
+
+```sh
+make install
+```
+
+Load it into the relevant database:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS plpython3u; -- Dependency
+CREATE EXTENSION plaza;
+```
+
+And install the Python SDK dependency:
+
+```sh
+# install from PyPI
+pip install plaza
+```
+
+See [`./scripts/test`](./scripts/test) how to use a [Python virtual environment](https://docs.python.org/3/library/sys_path_init.html#sys-path-init-virtual-environments) if you prefer that instead.
+
+Use [the troubleshooting section](#troubleshooting) if you encounter issues during or after installation.
 
 ## Troubleshooting
 
@@ -157,4 +184,4 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/stainless-sdks/plaza-sql/issues) with questions, bugs, or suggestions.
+We are keen for your feedback; please open an [issue](https://www.github.com/plazafyi/plaza-sql/issues) with questions, bugs, or suggestions.
