@@ -135,18 +135,34 @@ CREATE TYPE plaza_geocode.geocode_result AS ();
 CREATE TYPE plaza_geocode.geocoding_feature AS ();
 CREATE TYPE plaza_geocode.geocoding_feature_property AS ();
 CREATE TYPE plaza_geocode.reverse_geocode_result AS ();
+CREATE TYPE plaza_geocode.geocode_batch_response AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_search;
 
 CREATE SCHEMA IF NOT EXISTS plaza_routing;
 
 CREATE TYPE plaza_routing.matrix_request AS ();
-CREATE TYPE plaza_routing.matrix_result AS ();
+CREATE TYPE plaza_routing.matrix_request_destination AS ();
+CREATE TYPE plaza_routing.matrix_request_origin AS ();
 CREATE TYPE plaza_routing.nearest_result AS ();
 CREATE TYPE plaza_routing.nearest_result_property AS ();
 CREATE TYPE plaza_routing.route_request AS ();
+CREATE TYPE plaza_routing.route_request_destination AS ();
+CREATE TYPE plaza_routing.route_request_origin AS ();
+CREATE TYPE plaza_routing.route_request_ev AS ();
+CREATE TYPE plaza_routing.route_request_waypoint AS ();
 CREATE TYPE plaza_routing.route_result AS ();
 CREATE TYPE plaza_routing.route_result_property AS ();
+CREATE TYPE plaza_routing.routing_isochrone_response AS ();
+CREATE TYPE plaza_routing.routing_isochrone_response_property AS ();
+CREATE TYPE plaza_routing.routing_isochrone_post_response AS ();
+CREATE TYPE plaza_routing.routing_isochrone_post_response_property AS ();
+CREATE TYPE plaza_routing.matrix_params_destination AS ();
+CREATE TYPE plaza_routing.matrix_params_origin AS ();
+CREATE TYPE plaza_routing.route_params_destination AS ();
+CREATE TYPE plaza_routing.route_params_origin AS ();
+CREATE TYPE plaza_routing.route_params_ev AS ();
+CREATE TYPE plaza_routing.route_params_waypoint AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_elevation;
 
@@ -154,29 +170,42 @@ CREATE TYPE plaza_elevation.elevation_batch_result AS ();
 CREATE TYPE plaza_elevation.elevation_lookup_result AS ();
 CREATE TYPE plaza_elevation.elevation_lookup_result_property AS ();
 CREATE TYPE plaza_elevation.elevation_profile_request AS ();
+CREATE TYPE plaza_elevation.elevation_profile_request_coordinate AS ();
 CREATE TYPE plaza_elevation.elevation_profile_result AS ();
 CREATE TYPE plaza_elevation.elevation_profile_result_property AS ();
+CREATE TYPE plaza_elevation.batch_params_coordinate AS ();
+CREATE TYPE plaza_elevation.profile_params_coordinate AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_map_match;
 
 CREATE TYPE plaza_map_match.map_match_request AS ();
+CREATE TYPE plaza_map_match.map_match_request_coordinate AS ();
 CREATE TYPE plaza_map_match.map_match_result AS ();
-CREATE TYPE plaza_map_match.map_match_result_property AS ();
+CREATE TYPE plaza_map_match.map_match_result_feature AS ();
+CREATE TYPE plaza_map_match.map_match_result_feature_property AS ();
+CREATE TYPE plaza_map_match.match_params_coordinate AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_optimize;
 
 CREATE TYPE plaza_optimize.optimize_completed_result AS ();
-CREATE TYPE plaza_optimize.optimize_completed_result_property AS ();
+CREATE TYPE plaza_optimize.optimize_completed_result_feature AS ();
+CREATE TYPE plaza_optimize.optimize_completed_result_feature_property AS ();
 CREATE TYPE plaza_optimize.optimize_job_status AS ();
 CREATE TYPE plaza_optimize.optimize_processing_result AS ();
 CREATE TYPE plaza_optimize.optimize_request AS ();
+CREATE TYPE plaza_optimize.optimize_request_waypoint AS ();
 CREATE TYPE plaza_optimize.optimize_result AS ();
-CREATE TYPE plaza_optimize.optimize_result_property AS ();
+CREATE TYPE plaza_optimize.optimize_result_feature AS ();
+CREATE TYPE plaza_optimize.optimize_result_feature_property AS ();
+CREATE TYPE plaza_optimize.create_params_waypoint AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_query;
 
 CREATE TYPE plaza_query.overpass_query AS ();
 CREATE TYPE plaza_query.sparql_query AS ();
 CREATE TYPE plaza_query.sparql_result AS ();
+CREATE TYPE plaza_query.sparql_result_result AS ();
+CREATE TYPE plaza_query.query_execute_response AS ();
+CREATE TYPE plaza_query.execute_params_step AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_tiles;

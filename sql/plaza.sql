@@ -41,21 +41,19 @@ ALTER TYPE plaza.geo_json_feature
   ADD ATTRIBUTE geometry plaza.geo_json_geometry,
   ADD ATTRIBUTE properties JSONB,
   ADD ATTRIBUTE type TEXT,
-  ADD ATTRIBUTE id TEXT,
-  ADD ATTRIBUTE osm_id BIGINT;
+  ADD ATTRIBUTE id TEXT;
 
 CREATE OR REPLACE FUNCTION plaza.make_geo_json_feature(
   geometry plaza.geo_json_geometry,
   properties JSONB,
   type TEXT,
-  id TEXT DEFAULT NULL,
-  osm_id BIGINT DEFAULT NULL
+  id TEXT DEFAULT NULL
 )
 RETURNS plaza.geo_json_feature
 LANGUAGE SQL
 IMMUTABLE
 AS $$
-  SELECT ROW(geometry, properties, type, id, osm_id)::plaza.geo_json_feature;
+  SELECT ROW(geometry, properties, type, id)::plaza.geo_json_feature;
 $$;
 
 ALTER TYPE plaza.geo_json_geometry

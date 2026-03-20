@@ -174,7 +174,17 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_datasets._features(
-  id TEXT, cursor TEXT DEFAULT NULL, "limit" BIGINT DEFAULT NULL
+  id TEXT,
+  cursor TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  output_buffer DOUBLE PRECISION DEFAULT NULL,
+  output_centroid BOOLEAN DEFAULT NULL,
+  output_fields TEXT DEFAULT NULL,
+  output_geometry BOOLEAN DEFAULT NULL,
+  output_include TEXT DEFAULT NULL,
+  output_precision BIGINT DEFAULT NULL,
+  output_simplify DOUBLE PRECISION DEFAULT NULL,
+  output_sort TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
@@ -186,6 +196,14 @@ AS $$
       id=id,
       cursor=not_given if cursor is None else cursor,
       limit=not_given if limit is None else limit,
+      output_buffer=not_given if output_buffer is None else output_buffer,
+      output_centroid=not_given if output_centroid is None else output_centroid,
+      output_fields=not_given if output_fields is None else output_fields,
+      output_geometry=not_given if output_geometry is None else output_geometry,
+      output_include=not_given if output_include is None else output_include,
+      output_precision=not_given if output_precision is None else output_precision,
+      output_simplify=not_given if output_simplify is None else output_simplify,
+      output_sort=not_given if output_sort is None else output_sort,
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -195,7 +213,17 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_datasets.features(
-  id TEXT, cursor TEXT DEFAULT NULL, "limit" BIGINT DEFAULT NULL
+  id TEXT,
+  cursor TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  output_buffer DOUBLE PRECISION DEFAULT NULL,
+  output_centroid BOOLEAN DEFAULT NULL,
+  output_fields TEXT DEFAULT NULL,
+  output_geometry BOOLEAN DEFAULT NULL,
+  output_include TEXT DEFAULT NULL,
+  output_precision BIGINT DEFAULT NULL,
+  output_simplify DOUBLE PRECISION DEFAULT NULL,
+  output_sort TEXT DEFAULT NULL
 )
 RETURNS plaza.feature_collection
 LANGUAGE plpgsql
@@ -205,7 +233,19 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza.feature_collection,
-      plaza_datasets._features(id, cursor, "limit")
+      plaza_datasets._features(
+        id,
+        cursor,
+        "limit",
+        output_buffer,
+        output_centroid,
+        output_fields,
+        output_geometry,
+        output_include,
+        output_precision,
+        output_simplify,
+        output_sort
+      )
     );
   END;
 $$;

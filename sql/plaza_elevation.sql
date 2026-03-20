@@ -35,7 +35,7 @@ ALTER TYPE plaza_elevation.elevation_lookup_result_property
   ADD ATTRIBUTE elevation_m DOUBLE PRECISION;
 
 CREATE OR REPLACE FUNCTION plaza_elevation.make_elevation_lookup_result_property(
-  elevation_m DOUBLE PRECISION DEFAULT NULL
+  elevation_m DOUBLE PRECISION
 )
 RETURNS plaza_elevation.elevation_lookup_result_property
 LANGUAGE SQL
@@ -45,16 +45,29 @@ AS $$
 $$;
 
 ALTER TYPE plaza_elevation.elevation_profile_request
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry;
+  ADD ATTRIBUTE coordinates plaza_elevation.elevation_profile_request_coordinate[];
 
 CREATE OR REPLACE FUNCTION plaza_elevation.make_elevation_profile_request(
-  geometry plaza.geo_json_geometry
+  coordinates plaza_elevation.elevation_profile_request_coordinate[]
 )
 RETURNS plaza_elevation.elevation_profile_request
 LANGUAGE SQL
 IMMUTABLE
 AS $$
-  SELECT ROW(geometry)::plaza_elevation.elevation_profile_request;
+  SELECT ROW(coordinates)::plaza_elevation.elevation_profile_request;
+$$;
+
+ALTER TYPE plaza_elevation.elevation_profile_request_coordinate
+  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
+
+CREATE OR REPLACE FUNCTION plaza_elevation.make_elevation_profile_request_coordinate(
+  lat DOUBLE PRECISION, lng DOUBLE PRECISION
+)
+RETURNS plaza_elevation.elevation_profile_request_coordinate
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(lat, lng)::plaza_elevation.elevation_profile_request_coordinate;
 $$;
 
 ALTER TYPE plaza_elevation.elevation_profile_result
@@ -84,11 +97,11 @@ ALTER TYPE plaza_elevation.elevation_profile_result_property
   ADD ATTRIBUTE total_descent_m DOUBLE PRECISION;
 
 CREATE OR REPLACE FUNCTION plaza_elevation.make_elevation_profile_result_property(
-  avg_elevation_m DOUBLE PRECISION DEFAULT NULL,
-  max_elevation_m DOUBLE PRECISION DEFAULT NULL,
-  min_elevation_m DOUBLE PRECISION DEFAULT NULL,
-  total_ascent_m DOUBLE PRECISION DEFAULT NULL,
-  total_descent_m DOUBLE PRECISION DEFAULT NULL
+  avg_elevation_m DOUBLE PRECISION,
+  max_elevation_m DOUBLE PRECISION,
+  min_elevation_m DOUBLE PRECISION,
+  total_ascent_m DOUBLE PRECISION,
+  total_descent_m DOUBLE PRECISION
 )
 RETURNS plaza_elevation.elevation_profile_result_property
 LANGUAGE SQL
@@ -103,14 +116,40 @@ AS $$
   )::plaza_elevation.elevation_profile_result_property;
 $$;
 
+ALTER TYPE plaza_elevation.batch_params_coordinate
+  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
+
+CREATE OR REPLACE FUNCTION plaza_elevation.make_batch_params_coordinate(
+  lat DOUBLE PRECISION, lng DOUBLE PRECISION
+)
+RETURNS plaza_elevation.batch_params_coordinate
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(lat, lng)::plaza_elevation.batch_params_coordinate;
+$$;
+
+ALTER TYPE plaza_elevation.profile_params_coordinate
+  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
+
+CREATE OR REPLACE FUNCTION plaza_elevation.make_profile_params_coordinate(
+  lat DOUBLE PRECISION, lng DOUBLE PRECISION
+)
+RETURNS plaza_elevation.profile_params_coordinate
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(lat, lng)::plaza_elevation.profile_params_coordinate;
+$$;
+
 CREATE OR REPLACE FUNCTION plaza_elevation._batch(
-  geometry plaza.geo_json_geometry
+  coordinates plaza_elevation.batch_params_coordinate[]
 )
 RETURNS JSONB
 LANGUAGE plpython3u
 AS $$
   response = GD["__plaza_context__"].client.elevation.with_raw_response.batch(
-      geometry=GD["__plaza_context__"].strip_none(geometry),
+      coordinates=GD["__plaza_context__"].strip_none(coordinates),
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -120,7 +159,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation.batch(
-  geometry plaza.geo_json_geometry
+  coordinates plaza_elevation.batch_params_coordinate[]
 )
 RETURNS plaza_elevation.elevation_batch_result
 LANGUAGE plpgsql
@@ -129,7 +168,7 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_elevation.elevation_batch_result,
-      plaza_elevation._batch(geometry)
+      plaza_elevation._batch(coordinates)
     );
   END;
 $$;
@@ -137,7 +176,10 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_elevation._lookup(
   lat DOUBLE PRECISION DEFAULT NULL,
   lng DOUBLE PRECISION DEFAULT NULL,
-  locations TEXT DEFAULT NULL
+  locations TEXT DEFAULT NULL,
+  output_fields TEXT DEFAULT NULL,
+  output_include TEXT DEFAULT NULL,
+  output_precision BIGINT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
@@ -149,6 +191,9 @@ AS $$
       lat=not_given if lat is None else lat,
       lng=not_given if lng is None else lng,
       locations=not_given if locations is None else locations,
+      output_fields=not_given if output_fields is None else output_fields,
+      output_include=not_given if output_include is None else output_include,
+      output_precision=not_given if output_precision is None else output_precision,
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -160,7 +205,10 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_elevation.lookup(
   lat DOUBLE PRECISION DEFAULT NULL,
   lng DOUBLE PRECISION DEFAULT NULL,
-  locations TEXT DEFAULT NULL
+  locations TEXT DEFAULT NULL,
+  output_fields TEXT DEFAULT NULL,
+  output_include TEXT DEFAULT NULL,
+  output_precision BIGINT DEFAULT NULL
 )
 RETURNS plaza_elevation.elevation_lookup_result
 LANGUAGE plpgsql
@@ -170,19 +218,71 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_elevation.elevation_lookup_result,
-      plaza_elevation._lookup(lat, lng, locations)
+      plaza_elevation._lookup(
+        lat, lng, locations, output_fields, output_include, output_precision
+      )
+    );
+  END;
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_elevation._lookup_post(
+  lat DOUBLE PRECISION DEFAULT NULL,
+  lng DOUBLE PRECISION DEFAULT NULL,
+  locations TEXT DEFAULT NULL,
+  output_fields TEXT DEFAULT NULL,
+  output_include TEXT DEFAULT NULL,
+  output_precision BIGINT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpython3u
+AS $$
+  from plaza._types import not_given
+
+  response = GD["__plaza_context__"].client.elevation.with_raw_response.lookup_post(
+      lat=not_given if lat is None else lat,
+      lng=not_given if lng is None else lng,
+      locations=not_given if locations is None else locations,
+      output_fields=not_given if output_fields is None else output_fields,
+      output_include=not_given if output_include is None else output_include,
+      output_precision=not_given if output_precision is None else output_precision,
+  )
+
+  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
+  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
+  # caller later.
+  return response.text()
+$$;
+
+CREATE OR REPLACE FUNCTION plaza_elevation.lookup_post(
+  lat DOUBLE PRECISION DEFAULT NULL,
+  lng DOUBLE PRECISION DEFAULT NULL,
+  locations TEXT DEFAULT NULL,
+  output_fields TEXT DEFAULT NULL,
+  output_include TEXT DEFAULT NULL,
+  output_precision BIGINT DEFAULT NULL
+)
+RETURNS plaza_elevation.elevation_lookup_result
+LANGUAGE plpgsql
+AS $$
+  BEGIN
+    PERFORM plaza_internal.ensure_context();
+    RETURN jsonb_populate_record(
+      NULL::plaza_elevation.elevation_lookup_result,
+      plaza_elevation._lookup_post(
+        lat, lng, locations, output_fields, output_include, output_precision
+      )
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation._profile(
-  geometry plaza.geo_json_geometry
+  coordinates plaza_elevation.profile_params_coordinate[]
 )
 RETURNS JSONB
 LANGUAGE plpython3u
 AS $$
   response = GD["__plaza_context__"].client.elevation.with_raw_response.profile(
-      geometry=GD["__plaza_context__"].strip_none(geometry),
+      coordinates=GD["__plaza_context__"].strip_none(coordinates),
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -192,7 +292,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_elevation.profile(
-  geometry plaza.geo_json_geometry
+  coordinates plaza_elevation.profile_params_coordinate[]
 )
 RETURNS plaza_elevation.elevation_profile_result
 LANGUAGE plpgsql
@@ -201,7 +301,7 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_elevation.elevation_profile_result,
-      plaza_elevation._profile(geometry)
+      plaza_elevation._profile(coordinates)
     );
   END;
 $$;
