@@ -3,14 +3,11 @@ SET plaza.api_key = 'My API Key';
 
 SELECT *
 FROM plaza_optimize.create(
-  waypoints := plaza.make_geo_json_geometry(
-    coordinates := ARRAY[
-      $$
-      0
-      $$::JSONB
-    ],
-    type := 'Point'
-  )
+  waypoints := ARRAY[
+    plaza_optimize.make_create_params_waypoint(lat := 48.8566, lng := 2.3522),
+    plaza_optimize.make_create_params_waypoint(lat := 48.8606, lng := 2.3376),
+    plaza_optimize.make_create_params_waypoint(lat := 48.8584, lng := 2.2945)
+  ]
 );
 
 SELECT *

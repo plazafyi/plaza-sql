@@ -5,44 +5,31 @@ SELECT *
 FROM plaza_routing.isochrone(lat := 0, lng := 0, "time" := 0);
 
 SELECT *
+FROM plaza_routing.isochrone_post(lat := 0, lng := 0, "time" := 0);
+
+SELECT *
 FROM plaza_routing.matrix(
-  destinations := plaza.make_geo_json_geometry(
-    coordinates := ARRAY[
-      $$
-      0
-      $$::JSONB
-    ],
-    type := 'Point'
-  ),
-  origins := plaza.make_geo_json_geometry(
-    coordinates := ARRAY[
-      $$
-      0
-      $$::JSONB
-    ],
-    type := 'Point'
-  )
+  destinations := ARRAY[
+    plaza_routing.make_matrix_params_destination(lat := 48.8584, lng := 2.2945)
+  ],
+  origins := ARRAY[
+    plaza_routing.make_matrix_params_origin(lat := 48.8566, lng := 2.3522),
+    plaza_routing.make_matrix_params_origin(lat := 48.8606, lng := 2.3376)
+  ]
 );
 
 SELECT *
 FROM plaza_routing.nearest(lat := 0, lng := 0);
 
 SELECT *
+FROM plaza_routing.nearest_post(lat := 0, lng := 0);
+
+SELECT *
 FROM plaza_routing.route(
-  destination := plaza.make_geo_json_geometry(
-    coordinates := ARRAY[
-      $$
-      0
-      $$::JSONB
-    ],
-    type := 'Point'
+  destination := plaza_routing.make_route_params_destination(
+    lat := 48.8584, lng := 2.2945
   ),
-  origin := plaza.make_geo_json_geometry(
-    coordinates := ARRAY[
-      $$
-      0
-      $$::JSONB
-    ],
-    type := 'Point'
+  origin := plaza_routing.make_route_params_origin(
+    lat := 48.8566, lng := 2.3522
   )
 );

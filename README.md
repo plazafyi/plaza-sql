@@ -52,7 +52,7 @@ This extension requires:
 
 ```sql
 SELECT *
-FROM plaza_elements.nearby(lat := 48.8584, lng := 0, radius := 500);
+FROM plaza_elements.query(near := '48.8584,2.2945', radius := 500);
 ```
 
 ## Client configuration
@@ -85,17 +85,10 @@ See this table for the available configuration parameters:
 
 To send a request to the Plaza API, call the relevant SQL function with values corresponding to the parameter types and `SELECT` the columns you need from the returned rows.
 
-To construct [composite type](https://www.postgresql.org/docs/current/rowtypes.html) parameters, use the parameter type's provided `make_*` function. For example, `plaza.geo_json_geometry` may be constructed like so:
+To construct [composite type](https://www.postgresql.org/docs/current/rowtypes.html) parameters, use the parameter type's provided `make_*` function. For example, `plaza_routing.route_params_destination` may be constructed like so:
 
 ```sql
-plaza.make_geo_json_geometry(
-  coordinates := ARRAY[
-    $$
-    0
-    $$::JSONB
-  ],
-  type := 'Point'
-)
+plaza_routing.make_route_params_destination(lat := 48.8584, lng := 2.2945)
 ```
 
 ## Manual installation
