@@ -149,6 +149,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_geocode._autocomplete(
   q TEXT,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -164,6 +165,7 @@ AS $$
   response = GD["__plaza_context__"].client.geocode.with_raw_response.autocomplete(
       q=q,
       country_code=not_given if country_code is None else country_code,
+      format=not_given if format is None else format,
       lang=not_given if lang is None else lang,
       lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
@@ -180,6 +182,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_geocode.autocomplete(
   q TEXT,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -195,7 +198,7 @@ AS $$
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.autocomplete_result,
       plaza_geocode._autocomplete(
-        q, country_code, lang, lat, layer, "limit", lng
+        q, country_code, format, lang, lat, layer, "limit", lng
       )
     );
   END;
@@ -204,6 +207,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_geocode._autocomplete_post(
   q TEXT,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -218,6 +222,7 @@ AS $$
   response = GD["__plaza_context__"].client.geocode.with_raw_response.autocomplete_post(
       q=q,
       country_code=not_given if country_code is None else country_code,
+      format=not_given if format is None else format,
       lang=not_given if lang is None else lang,
       lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
@@ -234,6 +239,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_geocode.autocomplete_post(
   q TEXT,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -248,7 +254,7 @@ AS $$
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.autocomplete_result,
       plaza_geocode._autocomplete_post(
-        q, country_code, lang, lat, layer, "limit", lng
+        q, country_code, format, lang, lat, layer, "limit", lng
       )
     );
   END;
@@ -285,6 +291,7 @@ CREATE OR REPLACE FUNCTION plaza_geocode._forward(
   q TEXT,
   bbox TEXT DEFAULT NULL,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -301,6 +308,7 @@ AS $$
       q=q,
       bbox=not_given if bbox is None else bbox,
       country_code=not_given if country_code is None else country_code,
+      format=not_given if format is None else format,
       lang=not_given if lang is None else lang,
       lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
@@ -318,6 +326,7 @@ CREATE OR REPLACE FUNCTION plaza_geocode.forward(
   q TEXT,
   bbox TEXT DEFAULT NULL,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -333,7 +342,7 @@ AS $$
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.geocode_result,
       plaza_geocode._forward(
-        q, bbox, country_code, lang, lat, layer, "limit", lng
+        q, bbox, country_code, format, lang, lat, layer, "limit", lng
       )
     );
   END;
@@ -343,6 +352,7 @@ CREATE OR REPLACE FUNCTION plaza_geocode._forward_post(
   q TEXT,
   bbox TEXT DEFAULT NULL,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -358,6 +368,7 @@ AS $$
       q=q,
       bbox=not_given if bbox is None else bbox,
       country_code=not_given if country_code is None else country_code,
+      format=not_given if format is None else format,
       lang=not_given if lang is None else lang,
       lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
@@ -375,6 +386,7 @@ CREATE OR REPLACE FUNCTION plaza_geocode.forward_post(
   q TEXT,
   bbox TEXT DEFAULT NULL,
   country_code TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -389,13 +401,14 @@ AS $$
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.geocode_result,
       plaza_geocode._forward_post(
-        q, bbox, country_code, lang, lat, layer, "limit", lng
+        q, bbox, country_code, format, lang, lat, layer, "limit", lng
       )
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode._reverse(
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -411,6 +424,7 @@ AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.geocode.with_raw_response.reverse(
+      format=not_given if format is None else format,
       lang=not_given if lang is None else lang,
       lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
@@ -427,6 +441,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode.reverse(
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -443,12 +458,15 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.reverse_geocode_result,
-      plaza_geocode._reverse(lang, lat, layer, "limit", lng, near, radius)
+      plaza_geocode._reverse(
+        format, lang, lat, layer, "limit", lng, near, radius
+      )
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode._reverse_post(
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -463,6 +481,7 @@ AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.geocode.with_raw_response.reverse_post(
+      format=not_given if format is None else format,
       lang=not_given if lang is None else lang,
       lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
@@ -479,6 +498,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode.reverse_post(
+  format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
   lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
@@ -494,7 +514,9 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.reverse_geocode_result,
-      plaza_geocode._reverse_post(lang, lat, layer, "limit", lng, near, radius)
+      plaza_geocode._reverse_post(
+        format, lang, lat, layer, "limit", lng, near, radius
+      )
     );
   END;
 $$;

@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION plaza_search._query(
   q TEXT,
   cursor TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
   output_fields TEXT DEFAULT NULL,
   output_include TEXT DEFAULT NULL,
@@ -16,6 +17,7 @@ AS $$
   response = GD["__plaza_context__"].client.search.with_raw_response.query(
       q=q,
       cursor=not_given if cursor is None else cursor,
+      format=not_given if format is None else format,
       limit=not_given if limit is None else limit,
       output_fields=not_given if output_fields is None else output_fields,
       output_include=not_given if output_include is None else output_include,
@@ -32,6 +34,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_search.query(
   q TEXT,
   cursor TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
   output_fields TEXT DEFAULT NULL,
   output_include TEXT DEFAULT NULL,
@@ -49,6 +52,7 @@ AS $$
       plaza_search._query(
         q,
         cursor,
+        format,
         "limit",
         output_fields,
         output_include,
@@ -62,6 +66,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_search._query_post(
   q TEXT,
   cursor TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
   output_fields TEXT DEFAULT NULL,
   output_include TEXT DEFAULT NULL,
@@ -76,6 +81,7 @@ AS $$
   response = GD["__plaza_context__"].client.search.with_raw_response.query_post(
       q=q,
       cursor=not_given if cursor is None else cursor,
+      format=not_given if format is None else format,
       limit=not_given if limit is None else limit,
       output_fields=not_given if output_fields is None else output_fields,
       output_include=not_given if output_include is None else output_include,
@@ -92,6 +98,7 @@ $$;
 CREATE OR REPLACE FUNCTION plaza_search.query_post(
   q TEXT,
   cursor TEXT DEFAULT NULL,
+  format TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
   output_fields TEXT DEFAULT NULL,
   output_include TEXT DEFAULT NULL,
@@ -108,6 +115,7 @@ AS $$
       plaza_search._query_post(
         q,
         cursor,
+        format,
         "limit",
         output_fields,
         output_include,
