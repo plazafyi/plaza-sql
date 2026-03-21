@@ -12,8 +12,3 @@ SELECT *
 FROM plaza_query.overpass(
   data := '[out:json];node[amenity=cafe](around:500,48.8566,2.3522);out body;'
 );
-
-SELECT *
-FROM plaza_query.sparql(
-  query := 'SELECT ?s ?name WHERE { ?s osm:name ?name . ?s osm:amenity "cafe" } LIMIT 10'
-);
