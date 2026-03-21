@@ -9,49 +9,6 @@ AS $$
   SELECT ROW(data)::plaza_query.overpass_query;
 $$;
 
-ALTER TYPE plaza_query.sparql_query
-  ADD ATTRIBUTE query TEXT;
-
-CREATE OR REPLACE FUNCTION plaza_query.make_sparql_query(query TEXT)
-RETURNS plaza_query.sparql_query
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(query)::plaza_query.sparql_query;
-$$;
-
-ALTER TYPE plaza_query.sparql_result
-  ADD ATTRIBUTE results plaza_query.sparql_result_result[];
-
-CREATE OR REPLACE FUNCTION plaza_query.make_sparql_result(
-  results plaza_query.sparql_result_result[]
-)
-RETURNS plaza_query.sparql_result
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(results)::plaza_query.sparql_result;
-$$;
-
-ALTER TYPE plaza_query.sparql_result_result
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
-  ADD ATTRIBUTE properties JSONB,
-  ADD ATTRIBUTE type TEXT,
-  ADD ATTRIBUTE id TEXT;
-
-CREATE OR REPLACE FUNCTION plaza_query.make_sparql_result_result(
-  geometry plaza.geo_json_geometry,
-  properties JSONB,
-  type TEXT,
-  id TEXT DEFAULT NULL
-)
-RETURNS plaza_query.sparql_result_result
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(geometry, properties, type, id)::plaza_query.sparql_result_result;
-$$;
-
 ALTER TYPE plaza_query.query_execute_response
   ADD ATTRIBUTE steps JSONB[];
 
@@ -137,32 +94,6 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza.feature_collection, plaza_query._overpass(data, format)
-    );
-  END;
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_query._sparql(query TEXT)
-RETURNS JSONB
-LANGUAGE plpython3u
-AS $$
-  response = GD["__plaza_context__"].client.query.with_raw_response.sparql(
-      query=query,
-  )
-
-  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
-  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
-  # caller later.
-  return response.text()
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_query.sparql(query TEXT)
-RETURNS plaza_query.sparql_result
-LANGUAGE plpgsql
-AS $$
-  BEGIN
-    PERFORM plaza_internal.ensure_context();
-    RETURN jsonb_populate_record(
-      NULL::plaza_query.sparql_result, plaza_query._sparql(query)
     );
   END;
 $$;
