@@ -201,8 +201,6 @@ CREATE TYPE plaza_optimize.create_params_waypoint AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_query;
 
-CREATE TYPE plaza_query.overpass_query AS ();
-CREATE TYPE plaza_query.query_execute_response AS ();
-CREATE TYPE plaza_query.execute_params_step AS ();
+CREATE TYPE plaza_query.plazaql_query AS ();
 
 CREATE SCHEMA IF NOT EXISTS plaza_tiles;
