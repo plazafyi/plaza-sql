@@ -3,11 +3,12 @@ SET plaza.api_key = 'My API Key';
 
 SELECT *
 FROM plaza_optimize.create(
-  waypoints := ARRAY[
-    plaza_optimize.make_create_params_waypoint(lat := 48.8566, lng := 2.3522),
-    plaza_optimize.make_create_params_waypoint(lat := 48.8606, lng := 2.3376),
-    plaza_optimize.make_create_params_waypoint(lat := 48.8584, lng := 2.2945)
-  ]
+  waypoints := plaza.make_multi_point_geometry(
+    coordinates := ARRAY[
+      ARRAY[2.3522, 48.8566], ARRAY[2.3376, 48.8606], ARRAY[2.2945, 48.8584]
+    ],
+    type := 'MultiPoint'
+  )
 );
 
 SELECT *

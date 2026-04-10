@@ -1,3 +1,28 @@
+ALTER TYPE plaza_geocode.autocomplete_request
+  ADD ATTRIBUTE q TEXT,
+  ADD ATTRIBUTE country_code TEXT,
+  ADD ATTRIBUTE focus plaza.point_geometry,
+  ADD ATTRIBUTE lang TEXT,
+  ADD ATTRIBUTE layer TEXT,
+  ADD ATTRIBUTE "limit" BIGINT;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_autocomplete_request(
+  q TEXT,
+  country_code TEXT DEFAULT NULL,
+  focus plaza.point_geometry DEFAULT NULL,
+  lang TEXT DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL
+)
+RETURNS plaza_geocode.autocomplete_request
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(
+    q, country_code, focus, lang, layer, "limit"
+  )::plaza_geocode.autocomplete_request;
+$$;
+
 ALTER TYPE plaza_geocode.autocomplete_result
   ADD ATTRIBUTE features plaza_geocode.geocoding_feature[],
   ADD ATTRIBUTE type TEXT;
@@ -10,6 +35,31 @@ LANGUAGE SQL
 IMMUTABLE
 AS $$
   SELECT ROW(features, type)::plaza_geocode.autocomplete_result;
+$$;
+
+ALTER TYPE plaza_geocode.geocode_forward_request
+  ADD ATTRIBUTE q TEXT,
+  ADD ATTRIBUTE country_code TEXT,
+  ADD ATTRIBUTE focus plaza.point_geometry,
+  ADD ATTRIBUTE lang TEXT,
+  ADD ATTRIBUTE layer TEXT,
+  ADD ATTRIBUTE "limit" BIGINT;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_geocode_forward_request(
+  q TEXT,
+  country_code TEXT DEFAULT NULL,
+  focus plaza.point_geometry DEFAULT NULL,
+  lang TEXT DEFAULT NULL,
+  layer TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL
+)
+RETURNS plaza_geocode.geocode_forward_request
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(
+    q, country_code, focus, lang, layer, "limit"
+  )::plaza_geocode.geocode_forward_request;
 $$;
 
 ALTER TYPE plaza_geocode.geocode_result
@@ -26,13 +76,34 @@ AS $$
   SELECT ROW(features, type)::plaza_geocode.geocode_result;
 $$;
 
+ALTER TYPE plaza_geocode.geocode_reverse_request
+  ADD ATTRIBUTE geometry plaza.point_geometry,
+  ADD ATTRIBUTE lang TEXT,
+  ADD ATTRIBUTE "limit" BIGINT,
+  ADD ATTRIBUTE radius DOUBLE PRECISION;
+
+CREATE OR REPLACE FUNCTION plaza_geocode.make_geocode_reverse_request(
+  geometry plaza.point_geometry,
+  lang TEXT DEFAULT NULL,
+  "limit" BIGINT DEFAULT NULL,
+  radius DOUBLE PRECISION DEFAULT NULL
+)
+RETURNS plaza_geocode.geocode_reverse_request
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(
+    geometry, lang, "limit", radius
+  )::plaza_geocode.geocode_reverse_request;
+$$;
+
 ALTER TYPE plaza_geocode.geocoding_feature
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
+  ADD ATTRIBUTE geometry plaza.geometry,
   ADD ATTRIBUTE properties plaza_geocode.geocoding_feature_property,
   ADD ATTRIBUTE type TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_geocode.make_geocoding_feature(
-  geometry plaza.geo_json_geometry,
+  geometry plaza.geometry,
   properties plaza_geocode.geocoding_feature_property,
   type TEXT
 )
@@ -148,29 +219,26 @@ $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode._autocomplete(
   q TEXT,
-  country_code TEXT DEFAULT NULL,
   format TEXT DEFAULT NULL,
+  country_code TEXT DEFAULT NULL,
+  focus plaza.point_geometry DEFAULT NULL,
   lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
+  "limit" BIGINT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
-STABLE
 AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.geocode.with_raw_response.autocomplete(
       q=q,
-      country_code=not_given if country_code is None else country_code,
       format=not_given if format is None else format,
+      country_code=not_given if country_code is None else country_code,
+      focus=not_given if focus is None else GD["__plaza_context__"].strip_none(focus),
       lang=not_given if lang is None else lang,
-      lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
       limit=not_given if limit is None else limit,
-      lng=not_given if lng is None else lng,
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -181,80 +249,22 @@ $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode.autocomplete(
   q TEXT,
-  country_code TEXT DEFAULT NULL,
   format TEXT DEFAULT NULL,
+  country_code TEXT DEFAULT NULL,
+  focus plaza.point_geometry DEFAULT NULL,
   lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
+  "limit" BIGINT DEFAULT NULL
 )
 RETURNS plaza_geocode.autocomplete_result
 LANGUAGE plpgsql
-STABLE
 AS $$
   BEGIN
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.autocomplete_result,
       plaza_geocode._autocomplete(
-        q, country_code, format, lang, lat, layer, "limit", lng
-      )
-    );
-  END;
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_geocode._autocomplete_post(
-  q TEXT,
-  country_code TEXT DEFAULT NULL,
-  format TEXT DEFAULT NULL,
-  lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpython3u
-AS $$
-  from plaza._types import not_given
-
-  response = GD["__plaza_context__"].client.geocode.with_raw_response.autocomplete_post(
-      q=q,
-      country_code=not_given if country_code is None else country_code,
-      format=not_given if format is None else format,
-      lang=not_given if lang is None else lang,
-      lat=not_given if lat is None else lat,
-      layer=not_given if layer is None else layer,
-      limit=not_given if limit is None else limit,
-      lng=not_given if lng is None else lng,
-  )
-
-  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
-  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
-  # caller later.
-  return response.text()
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_geocode.autocomplete_post(
-  q TEXT,
-  country_code TEXT DEFAULT NULL,
-  format TEXT DEFAULT NULL,
-  lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
-)
-RETURNS plaza_geocode.autocomplete_result
-LANGUAGE plpgsql
-AS $$
-  BEGIN
-    PERFORM plaza_internal.ensure_context();
-    RETURN jsonb_populate_record(
-      NULL::plaza_geocode.autocomplete_result,
-      plaza_geocode._autocomplete_post(
-        q, country_code, format, lang, lat, layer, "limit", lng
+        q, format, country_code, focus, lang, layer, "limit"
       )
     );
   END;
@@ -289,31 +299,26 @@ $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode._forward(
   q TEXT,
-  bbox TEXT DEFAULT NULL,
-  country_code TEXT DEFAULT NULL,
   format TEXT DEFAULT NULL,
+  country_code TEXT DEFAULT NULL,
+  focus plaza.point_geometry DEFAULT NULL,
   lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
+  "limit" BIGINT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
-STABLE
 AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.geocode.with_raw_response.forward(
       q=q,
-      bbox=not_given if bbox is None else bbox,
-      country_code=not_given if country_code is None else country_code,
       format=not_given if format is None else format,
+      country_code=not_given if country_code is None else country_code,
+      focus=not_given if focus is None else GD["__plaza_context__"].strip_none(focus),
       lang=not_given if lang is None else lang,
-      lat=not_given if lat is None else lat,
       layer=not_given if layer is None else layer,
       limit=not_given if limit is None else limit,
-      lng=not_given if lng is None else lng,
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -324,113 +329,44 @@ $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode.forward(
   q TEXT,
-  bbox TEXT DEFAULT NULL,
-  country_code TEXT DEFAULT NULL,
   format TEXT DEFAULT NULL,
+  country_code TEXT DEFAULT NULL,
+  focus plaza.point_geometry DEFAULT NULL,
   lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
   layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
+  "limit" BIGINT DEFAULT NULL
 )
 RETURNS plaza_geocode.geocode_result
 LANGUAGE plpgsql
-STABLE
 AS $$
   BEGIN
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.geocode_result,
       plaza_geocode._forward(
-        q, bbox, country_code, format, lang, lat, layer, "limit", lng
-      )
-    );
-  END;
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_geocode._forward_post(
-  q TEXT,
-  bbox TEXT DEFAULT NULL,
-  country_code TEXT DEFAULT NULL,
-  format TEXT DEFAULT NULL,
-  lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpython3u
-AS $$
-  from plaza._types import not_given
-
-  response = GD["__plaza_context__"].client.geocode.with_raw_response.forward_post(
-      q=q,
-      bbox=not_given if bbox is None else bbox,
-      country_code=not_given if country_code is None else country_code,
-      format=not_given if format is None else format,
-      lang=not_given if lang is None else lang,
-      lat=not_given if lat is None else lat,
-      layer=not_given if layer is None else layer,
-      limit=not_given if limit is None else limit,
-      lng=not_given if lng is None else lng,
-  )
-
-  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
-  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
-  # caller later.
-  return response.text()
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_geocode.forward_post(
-  q TEXT,
-  bbox TEXT DEFAULT NULL,
-  country_code TEXT DEFAULT NULL,
-  format TEXT DEFAULT NULL,
-  lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL
-)
-RETURNS plaza_geocode.geocode_result
-LANGUAGE plpgsql
-AS $$
-  BEGIN
-    PERFORM plaza_internal.ensure_context();
-    RETURN jsonb_populate_record(
-      NULL::plaza_geocode.geocode_result,
-      plaza_geocode._forward_post(
-        q, bbox, country_code, format, lang, lat, layer, "limit", lng
+        q, format, country_code, focus, lang, layer, "limit"
       )
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode._reverse(
+  geometry plaza.point_geometry,
   format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL,
-  near TEXT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
+  radius DOUBLE PRECISION DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
-STABLE
 AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.geocode.with_raw_response.reverse(
+      geometry=GD["__plaza_context__"].strip_none(geometry),
       format=not_given if format is None else format,
       lang=not_given if lang is None else lang,
-      lat=not_given if lat is None else lat,
-      layer=not_given if layer is None else layer,
       limit=not_given if limit is None else limit,
-      lng=not_given if lng is None else lng,
-      near=not_given if near is None else near,
       radius=not_given if radius is None else radius,
   )
 
@@ -441,71 +377,11 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_geocode.reverse(
+  geometry plaza.point_geometry,
   format TEXT DEFAULT NULL,
   lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
   "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL,
-  near TEXT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
-)
-RETURNS plaza_geocode.reverse_geocode_result
-LANGUAGE plpgsql
-STABLE
-AS $$
-  BEGIN
-    PERFORM plaza_internal.ensure_context();
-    RETURN jsonb_populate_record(
-      NULL::plaza_geocode.reverse_geocode_result,
-      plaza_geocode._reverse(
-        format, lang, lat, layer, "limit", lng, near, radius
-      )
-    );
-  END;
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_geocode._reverse_post(
-  format TEXT DEFAULT NULL,
-  lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL,
-  near TEXT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpython3u
-AS $$
-  from plaza._types import not_given
-
-  response = GD["__plaza_context__"].client.geocode.with_raw_response.reverse_post(
-      format=not_given if format is None else format,
-      lang=not_given if lang is None else lang,
-      lat=not_given if lat is None else lat,
-      layer=not_given if layer is None else layer,
-      limit=not_given if limit is None else limit,
-      lng=not_given if lng is None else lng,
-      near=not_given if near is None else near,
-      radius=not_given if radius is None else radius,
-  )
-
-  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
-  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
-  # caller later.
-  return response.text()
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_geocode.reverse_post(
-  format TEXT DEFAULT NULL,
-  lang TEXT DEFAULT NULL,
-  lat DOUBLE PRECISION DEFAULT NULL,
-  layer TEXT DEFAULT NULL,
-  "limit" BIGINT DEFAULT NULL,
-  lng DOUBLE PRECISION DEFAULT NULL,
-  near TEXT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
+  radius DOUBLE PRECISION DEFAULT NULL
 )
 RETURNS plaza_geocode.reverse_geocode_result
 LANGUAGE plpgsql
@@ -514,9 +390,7 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_geocode.reverse_geocode_result,
-      plaza_geocode._reverse_post(
-        format, lang, lat, layer, "limit", lng, near, radius
-      )
+      plaza_geocode._reverse(geometry, format, lang, "limit", radius)
     );
   END;
 $$;

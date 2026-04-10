@@ -2,22 +2,17 @@ SET datestyle = 'ISO';
 SET plaza.api_key = 'My API Key';
 
 SELECT *
-FROM plaza_geocode.autocomplete(q := 'q');
-
-SELECT *
-FROM plaza_geocode.autocomplete_post(q := 'q');
+FROM plaza_geocode.autocomplete(q := '221B Bak');
 
 SELECT *
 FROM plaza_geocode.batch(addresses := ARRAY['string']);
 
 SELECT *
-FROM plaza_geocode.forward(q := 'q');
+FROM plaza_geocode.forward(q := '221B Baker Street, London');
 
 SELECT *
-FROM plaza_geocode.forward_post(q := 'q');
-
-SELECT *
-FROM plaza_geocode.reverse();
-
-SELECT *
-FROM plaza_geocode.reverse_post();
+FROM plaza_geocode.reverse(
+  geometry := plaza.make_point_geometry(
+    coordinates := ARRAY[2.3522, 48.8566], type := 'Point'
+  )
+);
