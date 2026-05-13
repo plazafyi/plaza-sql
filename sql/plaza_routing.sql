@@ -1,13 +1,28 @@
+ALTER TYPE plaza_routing.isochrone_request
+  ADD ATTRIBUTE geometry plaza.point_geometry,
+  ADD ATTRIBUTE "time" BIGINT[],
+  ADD ATTRIBUTE mode TEXT;
+
+CREATE OR REPLACE FUNCTION plaza_routing.make_isochrone_request(
+  geometry plaza.point_geometry, "time" BIGINT[], mode TEXT DEFAULT NULL
+)
+RETURNS plaza_routing.isochrone_request
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+  SELECT ROW(geometry, "time", mode)::plaza_routing.isochrone_request;
+$$;
+
 ALTER TYPE plaza_routing.matrix_request
-  ADD ATTRIBUTE destinations plaza_routing.matrix_request_destination[],
-  ADD ATTRIBUTE origins plaza_routing.matrix_request_origin[],
+  ADD ATTRIBUTE destinations plaza.point_geometry[],
+  ADD ATTRIBUTE origins plaza.point_geometry[],
   ADD ATTRIBUTE annotations TEXT,
   ADD ATTRIBUTE fallback_speed DOUBLE PRECISION,
   ADD ATTRIBUTE mode TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_routing.make_matrix_request(
-  destinations plaza_routing.matrix_request_destination[],
-  origins plaza_routing.matrix_request_origin[],
+  destinations plaza.point_geometry[],
+  origins plaza.point_geometry[],
   annotations TEXT DEFAULT NULL,
   fallback_speed DOUBLE PRECISION DEFAULT NULL,
   mode TEXT DEFAULT NULL
@@ -21,39 +36,27 @@ AS $$
   )::plaza_routing.matrix_request;
 $$;
 
-ALTER TYPE plaza_routing.matrix_request_destination
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
+ALTER TYPE plaza_routing.nearest_request
+  ADD ATTRIBUTE geometry plaza.point_geometry,
+  ADD ATTRIBUTE radius DOUBLE PRECISION;
 
-CREATE OR REPLACE FUNCTION plaza_routing.make_matrix_request_destination(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
+CREATE OR REPLACE FUNCTION plaza_routing.make_nearest_request(
+  geometry plaza.point_geometry, radius DOUBLE PRECISION DEFAULT NULL
 )
-RETURNS plaza_routing.matrix_request_destination
+RETURNS plaza_routing.nearest_request
 LANGUAGE SQL
 IMMUTABLE
 AS $$
-  SELECT ROW(lat, lng)::plaza_routing.matrix_request_destination;
-$$;
-
-ALTER TYPE plaza_routing.matrix_request_origin
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_matrix_request_origin(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.matrix_request_origin
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.matrix_request_origin;
+  SELECT ROW(geometry, radius)::plaza_routing.nearest_request;
 $$;
 
 ALTER TYPE plaza_routing.nearest_result
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
+  ADD ATTRIBUTE geometry plaza.geometry,
   ADD ATTRIBUTE properties plaza_routing.nearest_result_property,
   ADD ATTRIBUTE type TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_routing.make_nearest_result(
-  geometry plaza.geo_json_geometry,
+  geometry plaza.geometry,
   properties plaza_routing.nearest_result_property,
   type TEXT
 )
@@ -90,8 +93,8 @@ AS $$
 $$;
 
 ALTER TYPE plaza_routing.route_request
-  ADD ATTRIBUTE destination plaza_routing.route_request_destination,
-  ADD ATTRIBUTE origin plaza_routing.route_request_origin,
+  ADD ATTRIBUTE destination plaza.point_geometry,
+  ADD ATTRIBUTE origin plaza.point_geometry,
   ADD ATTRIBUTE alternatives BIGINT,
   ADD ATTRIBUTE annotations BOOLEAN,
   ADD ATTRIBUTE depart_at TIMESTAMP,
@@ -102,11 +105,11 @@ ALTER TYPE plaza_routing.route_request
   ADD ATTRIBUTE overview TEXT,
   ADD ATTRIBUTE steps BOOLEAN,
   ADD ATTRIBUTE traffic_model TEXT,
-  ADD ATTRIBUTE waypoints plaza_routing.route_request_waypoint[];
+  ADD ATTRIBUTE waypoints plaza.point_geometry[];
 
 CREATE OR REPLACE FUNCTION plaza_routing.make_route_request(
-  destination plaza_routing.route_request_destination,
-  origin plaza_routing.route_request_origin,
+  destination plaza.point_geometry,
+  origin plaza.point_geometry,
   alternatives BIGINT DEFAULT NULL,
   annotations BOOLEAN DEFAULT NULL,
   depart_at TIMESTAMP DEFAULT NULL,
@@ -117,7 +120,7 @@ CREATE OR REPLACE FUNCTION plaza_routing.make_route_request(
   overview TEXT DEFAULT NULL,
   steps BOOLEAN DEFAULT NULL,
   traffic_model TEXT DEFAULT NULL,
-  waypoints plaza_routing.route_request_waypoint[] DEFAULT NULL
+  waypoints plaza.point_geometry[] DEFAULT NULL
 )
 RETURNS plaza_routing.route_request
 LANGUAGE SQL
@@ -138,32 +141,6 @@ AS $$
     traffic_model,
     waypoints
   )::plaza_routing.route_request;
-$$;
-
-ALTER TYPE plaza_routing.route_request_destination
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_route_request_destination(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.route_request_destination
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.route_request_destination;
-$$;
-
-ALTER TYPE plaza_routing.route_request_origin
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_route_request_origin(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.route_request_origin
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.route_request_origin;
 $$;
 
 ALTER TYPE plaza_routing.route_request_ev
@@ -193,26 +170,13 @@ AS $$
   )::plaza_routing.route_request_ev;
 $$;
 
-ALTER TYPE plaza_routing.route_request_waypoint
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_route_request_waypoint(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.route_request_waypoint
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.route_request_waypoint;
-$$;
-
 ALTER TYPE plaza_routing.route_result
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
+  ADD ATTRIBUTE geometry plaza.geometry,
   ADD ATTRIBUTE properties plaza_routing.route_result_property,
   ADD ATTRIBUTE type TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_routing.make_route_result(
-  geometry plaza.geo_json_geometry,
+  geometry plaza.geometry,
   properties plaza_routing.route_result_property,
   type TEXT
 )
@@ -257,143 +221,16 @@ AS $$
 $$;
 
 ALTER TYPE plaza_routing.routing_isochrone_response
-  ADD ATTRIBUTE features plaza.geo_json_feature[],
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
-  ADD ATTRIBUTE properties plaza_routing.routing_isochrone_response_property,
-  ADD ATTRIBUTE type TEXT;
+  ADD ATTRIBUTE features plaza.geo_json_feature[], ADD ATTRIBUTE type TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_routing.make_routing_isochrone_response(
-  features plaza.geo_json_feature[] DEFAULT NULL,
-  geometry plaza.geo_json_geometry DEFAULT NULL,
-  properties plaza_routing.routing_isochrone_response_property DEFAULT NULL,
-  type TEXT DEFAULT NULL
+  features plaza.geo_json_feature[], type TEXT
 )
 RETURNS plaza_routing.routing_isochrone_response
 LANGUAGE SQL
 IMMUTABLE
 AS $$
-  SELECT ROW(
-    features, geometry, properties, type
-  )::plaza_routing.routing_isochrone_response;
-$$;
-
-ALTER TYPE plaza_routing.routing_isochrone_response_property
-  ADD ATTRIBUTE area_m2 DOUBLE PRECISION,
-  ADD ATTRIBUTE max_cost_s DOUBLE PRECISION,
-  ADD ATTRIBUTE mode TEXT,
-  ADD ATTRIBUTE time_seconds DOUBLE PRECISION,
-  ADD ATTRIBUTE vertices_reached BIGINT;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_routing_isochrone_response_property(
-  area_m2 DOUBLE PRECISION DEFAULT NULL,
-  max_cost_s DOUBLE PRECISION DEFAULT NULL,
-  mode TEXT DEFAULT NULL,
-  time_seconds DOUBLE PRECISION DEFAULT NULL,
-  vertices_reached BIGINT DEFAULT NULL
-)
-RETURNS plaza_routing.routing_isochrone_response_property
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(
-    area_m2, max_cost_s, mode, time_seconds, vertices_reached
-  )::plaza_routing.routing_isochrone_response_property;
-$$;
-
-ALTER TYPE plaza_routing.routing_isochrone_post_response
-  ADD ATTRIBUTE features plaza.geo_json_feature[],
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
-  ADD ATTRIBUTE properties plaza_routing.routing_isochrone_post_response_property,
-  ADD ATTRIBUTE type TEXT;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_routing_isochrone_post_response(
-  features plaza.geo_json_feature[] DEFAULT NULL,
-  geometry plaza.geo_json_geometry DEFAULT NULL,
-  properties plaza_routing.routing_isochrone_post_response_property DEFAULT NULL,
-  type TEXT DEFAULT NULL
-)
-RETURNS plaza_routing.routing_isochrone_post_response
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(
-    features, geometry, properties, type
-  )::plaza_routing.routing_isochrone_post_response;
-$$;
-
-ALTER TYPE plaza_routing.routing_isochrone_post_response_property
-  ADD ATTRIBUTE area_m2 DOUBLE PRECISION,
-  ADD ATTRIBUTE max_cost_s DOUBLE PRECISION,
-  ADD ATTRIBUTE mode TEXT,
-  ADD ATTRIBUTE time_seconds DOUBLE PRECISION,
-  ADD ATTRIBUTE vertices_reached BIGINT;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_routing_isochrone_post_response_property(
-  area_m2 DOUBLE PRECISION DEFAULT NULL,
-  max_cost_s DOUBLE PRECISION DEFAULT NULL,
-  mode TEXT DEFAULT NULL,
-  time_seconds DOUBLE PRECISION DEFAULT NULL,
-  vertices_reached BIGINT DEFAULT NULL
-)
-RETURNS plaza_routing.routing_isochrone_post_response_property
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(
-    area_m2, max_cost_s, mode, time_seconds, vertices_reached
-  )::plaza_routing.routing_isochrone_post_response_property;
-$$;
-
-ALTER TYPE plaza_routing.matrix_params_destination
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_matrix_params_destination(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.matrix_params_destination
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.matrix_params_destination;
-$$;
-
-ALTER TYPE plaza_routing.matrix_params_origin
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_matrix_params_origin(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.matrix_params_origin
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.matrix_params_origin;
-$$;
-
-ALTER TYPE plaza_routing.route_params_destination
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_route_params_destination(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.route_params_destination
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.route_params_destination;
-$$;
-
-ALTER TYPE plaza_routing.route_params_origin
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_route_params_origin(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.route_params_origin
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.route_params_origin;
+  SELECT ROW(features, type)::plaza_routing.routing_isochrone_response;
 $$;
 
 ALTER TYPE plaza_routing.route_params_ev
@@ -423,46 +260,22 @@ AS $$
   )::plaza_routing.route_params_ev;
 $$;
 
-ALTER TYPE plaza_routing.route_params_waypoint
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_routing.make_route_params_waypoint(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_routing.route_params_waypoint
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_routing.route_params_waypoint;
-$$;
-
 CREATE OR REPLACE FUNCTION plaza_routing._isochrone(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  "time" DOUBLE PRECISION,
-  mode TEXT DEFAULT NULL,
-  output_fields TEXT DEFAULT NULL,
-  output_geometry BOOLEAN DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  output_simplify DOUBLE PRECISION DEFAULT NULL
+  geometry plaza.point_geometry,
+  "time" BIGINT[],
+  format TEXT DEFAULT NULL,
+  mode TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
-STABLE
 AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.routing.with_raw_response.isochrone(
-      lat=lat,
-      lng=lng,
+      geometry=GD["__plaza_context__"].strip_none(geometry),
       time=time,
+      format=not_given if format is None else format,
       mode=not_given if mode is None else mode,
-      output_fields=not_given if output_fields is None else output_fields,
-      output_geometry=not_given if output_geometry is None else output_geometry,
-      output_include=not_given if output_include is None else output_include,
-      output_precision=not_given if output_precision is None else output_precision,
-      output_simplify=not_given if output_simplify is None else output_simplify,
   )
 
   # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
@@ -472,109 +285,26 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_routing.isochrone(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  "time" DOUBLE PRECISION,
-  mode TEXT DEFAULT NULL,
-  output_fields TEXT DEFAULT NULL,
-  output_geometry BOOLEAN DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  output_simplify DOUBLE PRECISION DEFAULT NULL
+  geometry plaza.point_geometry,
+  "time" BIGINT[],
+  format TEXT DEFAULT NULL,
+  mode TEXT DEFAULT NULL
 )
 RETURNS plaza_routing.routing_isochrone_response
 LANGUAGE plpgsql
-STABLE
 AS $$
   BEGIN
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_routing.routing_isochrone_response,
-      plaza_routing._isochrone(
-        lat,
-        lng,
-        "time",
-        mode,
-        output_fields,
-        output_geometry,
-        output_include,
-        output_precision,
-        output_simplify
-      )
-    );
-  END;
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_routing._isochrone_post(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  "time" DOUBLE PRECISION,
-  mode TEXT DEFAULT NULL,
-  output_fields TEXT DEFAULT NULL,
-  output_geometry BOOLEAN DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  output_simplify DOUBLE PRECISION DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpython3u
-AS $$
-  from plaza._types import not_given
-
-  response = GD["__plaza_context__"].client.routing.with_raw_response.isochrone_post(
-      lat=lat,
-      lng=lng,
-      time=time,
-      mode=not_given if mode is None else mode,
-      output_fields=not_given if output_fields is None else output_fields,
-      output_geometry=not_given if output_geometry is None else output_geometry,
-      output_include=not_given if output_include is None else output_include,
-      output_precision=not_given if output_precision is None else output_precision,
-      output_simplify=not_given if output_simplify is None else output_simplify,
-  )
-
-  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
-  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
-  # caller later.
-  return response.text()
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_routing.isochrone_post(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  "time" DOUBLE PRECISION,
-  mode TEXT DEFAULT NULL,
-  output_fields TEXT DEFAULT NULL,
-  output_geometry BOOLEAN DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  output_simplify DOUBLE PRECISION DEFAULT NULL
-)
-RETURNS plaza_routing.routing_isochrone_post_response
-LANGUAGE plpgsql
-AS $$
-  BEGIN
-    PERFORM plaza_internal.ensure_context();
-    RETURN jsonb_populate_record(
-      NULL::plaza_routing.routing_isochrone_post_response,
-      plaza_routing._isochrone_post(
-        lat,
-        lng,
-        "time",
-        mode,
-        output_fields,
-        output_geometry,
-        output_include,
-        output_precision,
-        output_simplify
-      )
+      plaza_routing._isochrone(geometry, "time", format, mode)
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_routing._matrix(
-  destinations plaza_routing.matrix_params_destination[],
-  origins plaza_routing.matrix_params_origin[],
+  destinations plaza.point_geometry[],
+  origins plaza.point_geometry[],
   annotations TEXT DEFAULT NULL,
   fallback_speed DOUBLE PRECISION DEFAULT NULL,
   mode TEXT DEFAULT NULL
@@ -599,8 +329,8 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_routing.matrix(
-  destinations plaza_routing.matrix_params_destination[],
-  origins plaza_routing.matrix_params_origin[],
+  destinations plaza.point_geometry[],
+  origins plaza.point_geometry[],
   annotations TEXT DEFAULT NULL,
   fallback_speed DOUBLE PRECISION DEFAULT NULL,
   mode TEXT DEFAULT NULL
@@ -617,25 +347,15 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_routing._nearest(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  output_fields TEXT DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
+  geometry plaza.point_geometry, radius DOUBLE PRECISION DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
-STABLE
 AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.routing.with_raw_response.nearest(
-      lat=lat,
-      lng=lng,
-      output_fields=not_given if output_fields is None else output_fields,
-      output_include=not_given if output_include is None else output_include,
-      output_precision=not_given if output_precision is None else output_precision,
+      geometry=GD["__plaza_context__"].strip_none(geometry),
       radius=not_given if radius is None else radius,
   )
 
@@ -646,63 +366,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_routing.nearest(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  output_fields TEXT DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
-)
-RETURNS plaza_routing.nearest_result
-LANGUAGE plpgsql
-STABLE
-AS $$
-  BEGIN
-    PERFORM plaza_internal.ensure_context();
-    RETURN jsonb_populate_record(
-      NULL::plaza_routing.nearest_result,
-      plaza_routing._nearest(
-        lat, lng, output_fields, output_include, output_precision, radius
-      )
-    );
-  END;
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_routing._nearest_post(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  output_fields TEXT DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpython3u
-AS $$
-  from plaza._types import not_given
-
-  response = GD["__plaza_context__"].client.routing.with_raw_response.nearest_post(
-      lat=lat,
-      lng=lng,
-      output_fields=not_given if output_fields is None else output_fields,
-      output_include=not_given if output_include is None else output_include,
-      output_precision=not_given if output_precision is None else output_precision,
-      radius=not_given if radius is None else radius,
-  )
-
-  # We don't parse the JSON and let PL/Python perform data mapping because PL/Python errors for omitted
-  # fields instead of defaulting them to NULL, but we want to be more lenient, which we handle in the
-  # caller later.
-  return response.text()
-$$;
-
-CREATE OR REPLACE FUNCTION plaza_routing.nearest_post(
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  output_fields TEXT DEFAULT NULL,
-  output_include TEXT DEFAULT NULL,
-  output_precision BIGINT DEFAULT NULL,
-  radius BIGINT DEFAULT NULL
+  geometry plaza.point_geometry, radius DOUBLE PRECISION DEFAULT NULL
 )
 RETURNS plaza_routing.nearest_result
 LANGUAGE plpgsql
@@ -711,16 +375,15 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_routing.nearest_result,
-      plaza_routing._nearest_post(
-        lat, lng, output_fields, output_include, output_precision, radius
-      )
+      plaza_routing._nearest(geometry, radius)
     );
   END;
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_routing._route(
-  destination plaza_routing.route_params_destination,
-  origin plaza_routing.route_params_origin,
+  destination plaza.point_geometry,
+  origin plaza.point_geometry,
+  format TEXT DEFAULT NULL,
   alternatives BIGINT DEFAULT NULL,
   annotations BOOLEAN DEFAULT NULL,
   depart_at TIMESTAMP DEFAULT NULL,
@@ -731,7 +394,7 @@ CREATE OR REPLACE FUNCTION plaza_routing._route(
   overview TEXT DEFAULT NULL,
   steps BOOLEAN DEFAULT NULL,
   traffic_model TEXT DEFAULT NULL,
-  waypoints plaza_routing.route_params_waypoint[] DEFAULT NULL
+  waypoints plaza.point_geometry[] DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
@@ -741,6 +404,7 @@ AS $$
   response = GD["__plaza_context__"].client.routing.with_raw_response.route(
       destination=GD["__plaza_context__"].strip_none(destination),
       origin=GD["__plaza_context__"].strip_none(origin),
+      format=not_given if format is None else format,
       alternatives=not_given if alternatives is None else alternatives,
       annotations=not_given if annotations is None else annotations,
       depart_at=not_given if depart_at is None else depart_at,
@@ -761,8 +425,9 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_routing.route(
-  destination plaza_routing.route_params_destination,
-  origin plaza_routing.route_params_origin,
+  destination plaza.point_geometry,
+  origin plaza.point_geometry,
+  format TEXT DEFAULT NULL,
   alternatives BIGINT DEFAULT NULL,
   annotations BOOLEAN DEFAULT NULL,
   depart_at TIMESTAMP DEFAULT NULL,
@@ -773,7 +438,7 @@ CREATE OR REPLACE FUNCTION plaza_routing.route(
   overview TEXT DEFAULT NULL,
   steps BOOLEAN DEFAULT NULL,
   traffic_model TEXT DEFAULT NULL,
-  waypoints plaza_routing.route_params_waypoint[] DEFAULT NULL
+  waypoints plaza.point_geometry[] DEFAULT NULL
 )
 RETURNS plaza_routing.route_result
 LANGUAGE plpgsql
@@ -785,6 +450,7 @@ AS $$
       plaza_routing._route(
         destination,
         origin,
+        format,
         alternatives,
         annotations,
         depart_at,

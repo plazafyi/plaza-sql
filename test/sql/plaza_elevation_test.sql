@@ -2,28 +2,26 @@ SET datestyle = 'ISO';
 SET plaza.api_key = 'My API Key';
 
 SELECT *
-FROM plaza_elevation.batch(
-  coordinates := ARRAY[
-    plaza_elevation.make_batch_params_coordinate(lat := 48.8566, lng := 2.3522),
-    plaza_elevation.make_batch_params_coordinate(lat := 45.764, lng := 4.8357)
-  ]
+FROM plaza_elevation.lookup(
+  geometry := plaza_elevation.make_lookup_params_geometry(
+    coordinates := ARRAY[
+      $$
+      2.3522
+      $$::JSONB,
+      $$
+      48.8566
+      $$::JSONB
+    ],
+    type := 'Point'
+  )
 );
 
 SELECT *
-FROM plaza_elevation.lookup();
-
-SELECT *
-FROM plaza_elevation.lookup_post();
-
-SELECT *
 FROM plaza_elevation.profile(
-  coordinates := ARRAY[
-    plaza_elevation.make_profile_params_coordinate(
-      lat := 48.8566, lng := 2.3522
-    ),
-    plaza_elevation.make_profile_params_coordinate(lat := 48.858, lng := 2.34),
-    plaza_elevation.make_profile_params_coordinate(
-      lat := 48.8584, lng := 2.2945
-    )
-  ]
+  geometry := plaza.make_line_string_geometry(
+    coordinates := ARRAY[
+      ARRAY[2.3522, 48.8566], ARRAY[2.34, 48.858], ARRAY[2.2945, 48.8584]
+    ],
+    type := 'LineString'
+  )
 );

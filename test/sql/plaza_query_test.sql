@@ -3,17 +3,5 @@ SET plaza.api_key = 'My API Key';
 
 SELECT *
 FROM plaza_query.execute(
-  steps := ARRAY[
-    plaza_query.make_execute_params_step(type := 'overpass', query := 'query')
-  ]
-);
-
-SELECT *
-FROM plaza_query.overpass(
-  data := '[out:json];node[amenity=cafe](around:500,48.8566,2.3522);out body;'
-);
-
-SELECT *
-FROM plaza_query.sparql(
-  query := 'SELECT ?s ?name WHERE { ?s osm:name ?name . ?s osm:amenity "cafe" } LIMIT 10'
+  data := '$$ = search(node, amenity: "cafe").around(distance: 500, geometry: point(48.8566, 2.3522));'
 );

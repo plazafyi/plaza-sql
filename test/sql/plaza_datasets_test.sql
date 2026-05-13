@@ -12,6 +12,3 @@ FROM plaza_datasets.list();
 
 SELECT *
 FROM plaza_datasets.delete(id := 'id');
-
-SELECT *
-FROM plaza_datasets.features(id := 'id');

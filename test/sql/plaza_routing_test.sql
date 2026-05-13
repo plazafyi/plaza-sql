@@ -2,34 +2,43 @@ SET datestyle = 'ISO';
 SET plaza.api_key = 'My API Key';
 
 SELECT *
-FROM plaza_routing.isochrone(lat := 0, lng := 0, "time" := 0);
-
-SELECT *
-FROM plaza_routing.isochrone_post(lat := 0, lng := 0, "time" := 0);
+FROM plaza_routing.isochrone(
+  geometry := plaza.make_point_geometry(
+    coordinates := ARRAY[2.3522, 48.8566], type := 'Point'
+  ),
+  "time" := ARRAY[1]
+);
 
 SELECT *
 FROM plaza_routing.matrix(
   destinations := ARRAY[
-    plaza_routing.make_matrix_params_destination(lat := 48.8584, lng := 2.2945)
+    plaza.make_point_geometry(
+      coordinates := ARRAY[2.2945, 48.8584], type := 'Point'
+    )
   ],
   origins := ARRAY[
-    plaza_routing.make_matrix_params_origin(lat := 48.8566, lng := 2.3522),
-    plaza_routing.make_matrix_params_origin(lat := 48.8606, lng := 2.3376)
+    plaza.make_point_geometry(
+      coordinates := ARRAY[2.3522, 48.8566], type := 'Point'
+    ),
+    plaza.make_point_geometry(
+      coordinates := ARRAY[2.3376, 48.8606], type := 'Point'
+    )
   ]
 );
 
 SELECT *
-FROM plaza_routing.nearest(lat := 0, lng := 0);
-
-SELECT *
-FROM plaza_routing.nearest_post(lat := 0, lng := 0);
+FROM plaza_routing.nearest(
+  geometry := plaza.make_point_geometry(
+    coordinates := ARRAY[2.3522, 48.8566], type := 'Point'
+  )
+);
 
 SELECT *
 FROM plaza_routing.route(
-  destination := plaza_routing.make_route_params_destination(
-    lat := 48.8584, lng := 2.2945
+  destination := plaza.make_point_geometry(
+    coordinates := ARRAY[2.2945, 48.8584], type := 'Point'
   ),
-  origin := plaza_routing.make_route_params_origin(
-    lat := 48.8566, lng := 2.3522
+  origin := plaza.make_point_geometry(
+    coordinates := ARRAY[2.3522, 48.8566], type := 'Point'
   )
 );

@@ -1,29 +1,15 @@
 ALTER TYPE plaza_map_match.map_match_request
-  ADD ATTRIBUTE coordinates plaza_map_match.map_match_request_coordinate[],
+  ADD ATTRIBUTE geometry plaza.line_string_geometry,
   ADD ATTRIBUTE radiuses DOUBLE PRECISION[];
 
 CREATE OR REPLACE FUNCTION plaza_map_match.make_map_match_request(
-  coordinates plaza_map_match.map_match_request_coordinate[],
-  radiuses DOUBLE PRECISION[] DEFAULT NULL
+  geometry plaza.line_string_geometry, radiuses DOUBLE PRECISION[] DEFAULT NULL
 )
 RETURNS plaza_map_match.map_match_request
 LANGUAGE SQL
 IMMUTABLE
 AS $$
-  SELECT ROW(coordinates, radiuses)::plaza_map_match.map_match_request;
-$$;
-
-ALTER TYPE plaza_map_match.map_match_request_coordinate
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_map_match.make_map_match_request_coordinate(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_map_match.map_match_request_coordinate
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_map_match.map_match_request_coordinate;
+  SELECT ROW(geometry, radiuses)::plaza_map_match.map_match_request;
 $$;
 
 ALTER TYPE plaza_map_match.map_match_result
@@ -44,12 +30,12 @@ AS $$
 $$;
 
 ALTER TYPE plaza_map_match.map_match_result_feature
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
+  ADD ATTRIBUTE geometry plaza.geometry,
   ADD ATTRIBUTE properties plaza_map_match.map_match_result_feature_property,
   ADD ATTRIBUTE type TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_map_match.make_map_match_result_feature(
-  geometry plaza.geo_json_geometry,
+  geometry plaza.geometry,
   properties plaza_map_match.map_match_result_feature_property,
   type TEXT
 )
@@ -87,22 +73,8 @@ AS $$
   )::plaza_map_match.map_match_result_feature_property;
 $$;
 
-ALTER TYPE plaza_map_match.match_params_coordinate
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_map_match.make_match_params_coordinate(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_map_match.match_params_coordinate
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_map_match.match_params_coordinate;
-$$;
-
 CREATE OR REPLACE FUNCTION plaza_map_match._match(
-  coordinates plaza_map_match.match_params_coordinate[],
-  radiuses DOUBLE PRECISION[] DEFAULT NULL
+  geometry plaza.line_string_geometry, radiuses DOUBLE PRECISION[] DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpython3u
@@ -110,7 +82,7 @@ AS $$
   from plaza._types import not_given
 
   response = GD["__plaza_context__"].client.map_match.with_raw_response.match(
-      coordinates=GD["__plaza_context__"].strip_none(coordinates),
+      geometry=GD["__plaza_context__"].strip_none(geometry),
       radiuses=not_given if radiuses is None else radiuses,
   )
 
@@ -121,8 +93,7 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_map_match.match(
-  coordinates plaza_map_match.match_params_coordinate[],
-  radiuses DOUBLE PRECISION[] DEFAULT NULL
+  geometry plaza.line_string_geometry, radiuses DOUBLE PRECISION[] DEFAULT NULL
 )
 RETURNS plaza_map_match.map_match_result
 LANGUAGE plpgsql
@@ -131,7 +102,7 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_map_match.map_match_result,
-      plaza_map_match._match(coordinates, radiuses)
+      plaza_map_match._match(geometry, radiuses)
     );
   END;
 $$;

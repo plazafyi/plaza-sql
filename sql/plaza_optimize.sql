@@ -22,12 +22,12 @@ AS $$
 $$;
 
 ALTER TYPE plaza_optimize.optimize_completed_result_feature
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
+  ADD ATTRIBUTE geometry plaza.geometry,
   ADD ATTRIBUTE properties plaza_optimize.optimize_completed_result_feature_property,
   ADD ATTRIBUTE type TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_optimize.make_optimize_completed_result_feature(
-  geometry plaza.geo_json_geometry,
+  geometry plaza.geometry,
   properties plaza_optimize.optimize_completed_result_feature_property,
   type TEXT
 )
@@ -87,12 +87,12 @@ AS $$
 $$;
 
 ALTER TYPE plaza_optimize.optimize_request
-  ADD ATTRIBUTE waypoints plaza_optimize.optimize_request_waypoint[],
+  ADD ATTRIBUTE waypoints plaza.multi_point_geometry,
   ADD ATTRIBUTE mode TEXT,
   ADD ATTRIBUTE roundtrip BOOLEAN;
 
 CREATE OR REPLACE FUNCTION plaza_optimize.make_optimize_request(
-  waypoints plaza_optimize.optimize_request_waypoint[],
+  waypoints plaza.multi_point_geometry,
   mode TEXT DEFAULT NULL,
   roundtrip BOOLEAN DEFAULT NULL
 )
@@ -101,19 +101,6 @@ LANGUAGE SQL
 IMMUTABLE
 AS $$
   SELECT ROW(waypoints, mode, roundtrip)::plaza_optimize.optimize_request;
-$$;
-
-ALTER TYPE plaza_optimize.optimize_request_waypoint
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_optimize.make_optimize_request_waypoint(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_optimize.optimize_request_waypoint
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_optimize.optimize_request_waypoint;
 $$;
 
 ALTER TYPE plaza_optimize.optimize_result
@@ -144,12 +131,12 @@ AS $$
 $$;
 
 ALTER TYPE plaza_optimize.optimize_result_feature
-  ADD ATTRIBUTE geometry plaza.geo_json_geometry,
+  ADD ATTRIBUTE geometry plaza.geometry,
   ADD ATTRIBUTE properties plaza_optimize.optimize_result_feature_property,
   ADD ATTRIBUTE type TEXT;
 
 CREATE OR REPLACE FUNCTION plaza_optimize.make_optimize_result_feature(
-  geometry plaza.geo_json_geometry,
+  geometry plaza.geometry,
   properties plaza_optimize.optimize_result_feature_property,
   type TEXT
 )
@@ -181,21 +168,9 @@ AS $$
   )::plaza_optimize.optimize_result_feature_property;
 $$;
 
-ALTER TYPE plaza_optimize.create_params_waypoint
-  ADD ATTRIBUTE lat DOUBLE PRECISION, ADD ATTRIBUTE lng DOUBLE PRECISION;
-
-CREATE OR REPLACE FUNCTION plaza_optimize.make_create_params_waypoint(
-  lat DOUBLE PRECISION, lng DOUBLE PRECISION
-)
-RETURNS plaza_optimize.create_params_waypoint
-LANGUAGE SQL
-IMMUTABLE
-AS $$
-  SELECT ROW(lat, lng)::plaza_optimize.create_params_waypoint;
-$$;
-
 CREATE OR REPLACE FUNCTION plaza_optimize._create(
-  waypoints plaza_optimize.create_params_waypoint[],
+  waypoints plaza.multi_point_geometry,
+  format TEXT DEFAULT NULL,
   mode TEXT DEFAULT NULL,
   roundtrip BOOLEAN DEFAULT NULL
 )
@@ -206,6 +181,7 @@ AS $$
 
   response = GD["__plaza_context__"].client.optimize.with_raw_response.create(
       waypoints=GD["__plaza_context__"].strip_none(waypoints),
+      format=not_given if format is None else format,
       mode=not_given if mode is None else mode,
       roundtrip=not_given if roundtrip is None else roundtrip,
   )
@@ -217,7 +193,8 @@ AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION plaza_optimize.create(
-  waypoints plaza_optimize.create_params_waypoint[],
+  waypoints plaza.multi_point_geometry,
+  format TEXT DEFAULT NULL,
   mode TEXT DEFAULT NULL,
   roundtrip BOOLEAN DEFAULT NULL
 )
@@ -228,7 +205,7 @@ AS $$
     PERFORM plaza_internal.ensure_context();
     RETURN jsonb_populate_record(
       NULL::plaza_optimize.optimize_result,
-      plaza_optimize._create(waypoints, mode, roundtrip)
+      plaza_optimize._create(waypoints, format, mode, roundtrip)
     );
   END;
 $$;
